@@ -1,0 +1,8 @@
+= Docker container for the pipeline
+
+The pipline need the following tools:
+
+- [Picard Tools](https://broadinstitute.github.io/picard/)
+- [Genome Analysis Toolkit (GATK)](https://software.broadinstitute.org/gatk/)
+- [STAR](https://github.com/alexdobin/STAR) - RNA mapper
+- [samtools](http://www.htslib.org/)
