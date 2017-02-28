@@ -2,7 +2,7 @@
 
 The pipline need the following tools:
 
-- [Picard Tools](https://broadinstitute.github.io/picard/)
-- [Genome Analysis Toolkit (GATK)](https://software.broadinstitute.org/gatk/)
-- [STAR](https://github.com/alexdobin/STAR) - RNA mapper
-- [samtools](http://www.htslib.org/)
+- https://broadinstitute.github.io/picard/[Picard Tools]
+- https://software.broadinstitute.org/gatk/[Genome Analysis Toolkit (GATK)]
+- https://github.com/alexdobin/STAR[STAR] - RNA mapper
+- http://www.htslib.org/[samtools]
