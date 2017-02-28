@@ -1,4 +1,4 @@
-= Docker container for the pipeline
+= Docker container
 
 The pipline needs the following tools:
 
@@ -6,3 +6,7 @@ The pipline needs the following tools:
 - https://software.broadinstitute.org/gatk/[Genome Analysis Toolkit (GATK)]
 - https://github.com/alexdobin/STAR[STAR] - RNA mapper
 - http://www.htslib.org/[samtools]
+
+A Docker container with the tools can be built from the `Dockerfile` present in this folder.
+
+A prebuilt Docker container is available at ...
