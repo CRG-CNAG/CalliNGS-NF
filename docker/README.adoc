@@ -1,6 +1,6 @@
 = Docker container for the pipeline
 
-The pipline need the following tools:
+The pipline needs the following tools:
 
 - https://broadinstitute.github.io/picard/[Picard Tools]
 - https://software.broadinstitute.org/gatk/[Genome Analysis Toolkit (GATK)]
