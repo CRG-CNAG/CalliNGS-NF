@@ -24,9 +24,14 @@ RUN curl -fjksSL --header "Cookie: oraclelicense=accept-securebackup-cookie" -L 
 RUN curl -fksSL https://github.com/broadinstitute/picard/releases/download/2.9.0/picard.jar > /usr/local/bin/picard.jar && \
     chmod +x /usr/local/bin/picard.jar
 
-# install Samtools
+# install SAMtools
 RUN curl -fksSL https://github.com/samtools/samtools/releases/download/1.3.1/samtools-1.3.1.tar.bz2 | tar xj && \
     cd samtools-1.3.1 && \
+    make && make install
+
+# install BCFtools
+RUN curl -fksSL https://github.com/samtools/bcftools/releases/download/1.3.1/bcftools-1.3.1.tar.bz2 | tar xj && \
+    cd bcftools-1.3.1 && \
     make && make install
 
 # install STAR
