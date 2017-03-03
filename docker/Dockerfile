@@ -24,10 +24,6 @@ RUN curl -fjksSL --header "Cookie: oraclelicense=accept-securebackup-cookie" -L 
 RUN curl -fksSL https://github.com/broadinstitute/picard/releases/download/2.9.0/picard.jar > /usr/local/bin/picard.jar && \
     chmod +x /usr/local/bin/picard.jar
 
-# install GATK
-COPY GenomeAnalysisTK.jar /usr/local/bin
-RUN chmod +x /usr/local/bin/GenomeAnalysisTK.jar
-
 # install Samtools
 RUN curl -fksSL https://github.com/samtools/samtools/releases/download/1.3.1/samtools-1.3.1.tar.bz2 | tar xj && \
     cd samtools-1.3.1 && \
