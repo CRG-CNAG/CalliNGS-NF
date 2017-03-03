@@ -7,7 +7,9 @@ params.genome = "$baseDir/data/genome.fa"
 params.variant = "$baseDir/data/NA12878.chr22.vcf.gz"
 params.blacklist = "$baseDir/data/ENCFF001TDO.sorted.bed" 
 params.reads = "$baseDir/data/*_{1,2}.fastq.gz"
+params.gatk = 'GenomeAnalysisTK'
 
+GATK = params.gatk
 genome_file = file(params.genome)
 variant_file = file(params.variant)
 blacklist_file = file(params.blacklist)
@@ -31,7 +33,8 @@ process '1a_prepape_genome_star' {
  * to create dictionary and index files for genome
  */
 process '1a_prepape_genome_samtools' {
-  input: file(genome) from genome_file 
+  input: file genome from genome_file 
+  output: file "${genome}.fai" into genome_index 
   
   """
   samtools faidx $genome
@@ -39,8 +42,8 @@ process '1a_prepape_genome_samtools' {
 }
 
 process '1a_prepare_genome_picard' {
-  input: file(genome) from genome_file 
-  output: file("${genome.baseName}.dict") into genome
+  input: file genome from genome_file 
+  output: file "${genome.baseName}.dict" into genome_dict
   
   """
   PICARD=`which picard.jar`
@@ -68,46 +71,34 @@ process '2_rnaseq_star' {
   set pairId, file(reads) from reads_ch 
 
   output: 
-  file 'Aligned.sortedByCoord.out.bam*'
+  file 'Aligned.sortedByCoord.out.bam' into output_groupFile
 
   """
   # Align reads to genome
-  STAR \
-    --genomeDir $genomeDir \
-    --readFilesIn $reads \
-    --runThreadN ${task.cpus} \
-    --readFilesCommand zcat \
-    --outFilterType BySJout \
-    --alignSJoverhangMin 8 \
-    --alignSJDBoverhangMin 1 \
-    --outFilterMismatchNmax 999
+  STAR --genomeDir $genomeDir --readFilesIn $reads --runThreadN ${task.cpus} --readFilesCommand zcat --outFilterType BySJout --alignSJoverhangMin 8 --alignSJDBoverhangMin 1 --outFilterMismatchNmax 999
     
   # 2d pass STAR - improve alignmnets using table of splice junctions. create a new index  
   mkdir genomeDir  
-  STAR \
-    --runMode genomeGenerate \
-    --genomeDir genomeDir \
-    --genomeFastaFiles $genome \
-    --sjdbFileChrStartEnd SJ.out.tab \
-    --sjdbOverhang 75 \
-    --runThreadN ${task.cpus}  
+  STAR --runMode genomeGenerate --genomeDir genomeDir --genomeFastaFiles $genome --sjdbFileChrStartEnd SJ.out.tab --sjdbOverhang 75 --runThreadN ${task.cpus}  
     
   # Final alignments  
-  STAR \
-    --genomeDir genomeDir \
-    --readFilesIn $reads \
-    --runThreadN ${task.cpus} \
-    --readFilesCommand zcat \
-    --outFilterType BySJout \
-    --alignSJoverhangMin 8 \
-    --alignSJDBoverhangMin 1 \
-    --outFilterMismatchNmax 999 \
-    --outSAMtype BAM SortedByCoordinate \
-    --outSAMattrRGline ID:$pairId LB:library PL:illumina PU:machine SM:GM12878 
-
-  samtools index Aligned.sortedByCoord.out.bam
-
+  STAR --genomeDir genomeDir --readFilesIn $reads --runThreadN ${task.cpus} --readFilesCommand zcat --outFilterType BySJout --alignSJoverhangMin 8 --alignSJDBoverhangMin 1 --outFilterMismatchNmax 999 --outSAMtype BAM SortedByCoordinate --outSAMattrRGline ID:$pairId LB:library PL:illumina PU:machine SM:GM12878 
   """
 }
 
+process '2_rnaseq_gatk' {
+  container 'biodckrdev/gatk'
+  
+  input: 
+  file genome from genome_file 
+  file index from genome_index
+  file output_groupFile
+  file genome_dict
+  
+  """
+  samtools index Aligned.sortedByCoord.out.bam
+  $GATK -T SplitNCigarReads -R $genome -I $output_groupFile -o split.bam -rf ReassignOneMappingQuality -RMQF 255 -RMQT 60 -U ALLOW_N_CIGAR_READS --fix_misencoded_quality_scores
+
+  """
+}
 
