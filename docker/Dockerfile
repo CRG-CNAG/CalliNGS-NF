@@ -10,6 +10,7 @@ RUN apt-get update -qq && apt-get install -y -q --no-install-recommends \
       libncurses5-dev  \
       libncursesw5-dev \
       build-essential \
+      pkg-config \
       zlib1g-dev \
       bzip2 && \
     apt-get clean && \
@@ -29,10 +30,10 @@ RUN curl -fksSL https://github.com/samtools/samtools/releases/download/1.3.1/sam
     cd samtools-1.3.1 && \
     make && make install
 
-# install BCFtools
-RUN curl -fksSL https://github.com/samtools/bcftools/releases/download/1.3.1/bcftools-1.3.1.tar.bz2 | tar xj && \
-    cd bcftools-1.3.1 && \
-    make && make install
+# install VCFtools
+RUN curl -fksSL https://github.com/vcftools/vcftools/releases/download/v0.1.14/vcftools-0.1.14.tar.gz | tar xz && \
+    cd vcftools-0.1.14 && \
+    ./configure && make && make install
 
 # install STAR
 RUN curl -fksSL https://github.com/alexdobin/STAR/archive/2.5.2b.tar.gz | tar xz && \
