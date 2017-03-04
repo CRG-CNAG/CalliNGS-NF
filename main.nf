@@ -1,6 +1,33 @@
+/*
+ * Copyright (c) 2017, Centre for Genomic Regulation (CRG).
+ *
+ *   This file is part of 'NGS17WS-NF'.
+ *
+ *   NGS17WS-NF is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   NGS17WS-NF is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with NGS17WS-NF.  If not, see <http://www.gnu.org/licenses/>.
+ */
+ 
+  
 /* 
- * this pipeline reproduces steps from the GATK best practics of SNP calling with RNAseq data
+ * Calling variants in RNAseq
+ * 
+ * This pipeline reproduces steps from the GATK best practics of SNP calling with RNAseq data
  * https://software.broadinstitute.org/gatk/guide/article?id=3891
+ * 
+ * Anna Vlasova 
+ * Emilio Palumbo 
+ * Paolo Di Tommaso
+ * Evan Floden 
  */
  
 params.genome = "$baseDir/data/genome.fa"
@@ -53,8 +80,8 @@ process '1a_prepare_genome_picard' {
 
 process '1b_prepare_vcf_file' {
   input: 
-    file(variantFile) from variant_file
-    file(blacklisted) from blacklist_file
+  file(variantFile) from variant_file
+  file(blacklisted) from blacklist_file
     
   """
   vcftools --gzvcf $variantFile --out ${variantFile}.filtered --exclude-bed $blacklisted --recode
