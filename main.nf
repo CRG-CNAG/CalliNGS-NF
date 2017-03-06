@@ -82,9 +82,13 @@ process '1b_prepare_vcf_file' {
   input: 
   file(variantFile) from variant_file
   file(blacklisted) from blacklist_file
+
+  output:
+  set file("${variantFile.baseName}.filtered.recode.vcf.gz"), file("${variantFile.baseName}.filtered.recode.vcf.gz.tbi") into prepared_vcf
     
   """
-  vcftools --gzvcf $variantFile --out ${variantFile}.filtered --exclude-bed $blacklisted --recode
+  vcftools --gzvcf $variantFile -c --exclude-bed $blacklisted --recode | bgzip -c --out ${variantFile.basename}.filtered.recode.vcf.gz
+  tabix ${variantFile.baseName}.filtered.recode.vcf.gz
   """
 }
 
@@ -143,7 +147,7 @@ process '2_rnaseq_gatk_recalibrate' {
   file index from genome_index1
   set file(bam), file(index) from output_split
   file genome_dict1
-  file variant_file
+  set file(variant_file), file(variant_file_index) from prepared_vcf
 
   output:
   set file('final.bam'), file('final.bam.bai') into output_final
