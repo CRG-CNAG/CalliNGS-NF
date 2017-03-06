@@ -102,7 +102,7 @@ process '2_rnaseq_star' {
   set pairId, file(reads) from reads_ch 
 
   output: 
-  set file('Aligned.sortedByCoord.out.bam'), file('Aligned.sortedByCoord.out.bam.bai') into output_groupFile
+  set pairId, file('Aligned.sortedByCoord.out.bam'), file('Aligned.sortedByCoord.out.bam.bai') into output_groupFile
 
   """
   # Align reads to genome
@@ -126,11 +126,11 @@ process '2_rnaseq_gatk_split_n_cigar' {
   input: 
   file genome from genome_file 
   file index from genome_index.first()
-  set file(bam), file(index) from output_groupFile
+  set pairId, file(bam), file(index) from output_groupFile
   file genome_dict from genome_dict.first()
 
   output:
-  set file('split.bam'), file('split.bai') into output_split
+  set pairId, file('split.bam'), file('split.bai') into output_split
   
   """
   # Split'N'Trim and reassign mapping qualities
@@ -144,12 +144,12 @@ process '2_rnaseq_gatk_recalibrate' {
   input: 
   file genome from genome_file 
   file index from genome_index1.first()
-  set file(bam), file(index) from output_split
+  set pairId, file(bam), file(index) from output_split
   file genome_dict1 from genome_dict1.first()
   set file(variant_file), file(variant_file_index) from prepared_vcf.first()
 
   output:
-  set file('final.uniq.bam'), file('final.uniq.bam.bai') into output_final
+  set pairId, file('final.uniq.bam'), file('final.uniq.bam.bai') into output_final
   
   """
   #  Indel Realignment and Base Recalibration
@@ -166,14 +166,14 @@ process '2_rnaseq_gatk_recalibrate' {
 }
 
 // define closure for grouping replicates
-def grouper = { bam, bai ->
-    def m = (bam.baseName =~ /([^12]+)[12].*\.bam]/)
+def grouper = { id, bam, bai ->
+    def m = (id =~ /([^12]+)[12]/)
     m[0][1]
 }
 
 // group replicates
 output_final.groupBy(grouper).flatMap().map {
-  it.value.flatten().sort()
+  [it.key] + [it.value[0][1..-1],it.value[1][1..-1]].flatten().sort()
 }.into { merged_replicates }
 
 process '3_rnaseq_call_variants' {
@@ -181,10 +181,10 @@ process '3_rnaseq_call_variants' {
 
   input:
   file genome from genome_file
-  file bams from merged_replicates
+  set repId, file(bam1), file(index1), file(bam2), file(index2) from merged_replicates
 
   """
-  $GATK -T HaplotypeCaller -R $genome -I $bams -dontUseSoftClippedBases -stand_call_conf 20.0 -stand_emit_conf 20.0 -o output.samtools.vcf.gz
+  $GATK -T HaplotypeCaller -R $genome -I $bam1 -I $bam2 -dontUseSoftClippedBases -stand_call_conf 20.0 -stand_emit_conf 20.0 -o output.samtools.vcf.gz
   """
 
 }
