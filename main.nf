@@ -98,7 +98,7 @@ process '2_rnaseq_star' {
   set pairId, file(reads) from reads_ch 
 
   output: 
-  file 'Aligned.sortedByCoord.out.bam' into output_groupFile
+  set file('Aligned.sortedByCoord.out.bam'), file('Aligned.sortedByCoord.out.bam.bai') into output_groupFile
 
   """
   # Align reads to genome
@@ -112,7 +112,7 @@ process '2_rnaseq_star' {
   STAR --genomeDir genomeDir --readFilesIn $reads --runThreadN ${task.cpus} --readFilesCommand zcat --outFilterType BySJout --alignSJoverhangMin 8 --alignSJDBoverhangMin 1 --outFilterMismatchNmax 999 --outSAMtype BAM SortedByCoordinate --outSAMattrRGline ID:$pairId LB:library PL:illumina PU:machine SM:GM12878
 
   # Index the BAM file
-  #samtools index Aligned.sortedByCoord.out.bam
+  samtools index Aligned.sortedByCoord.out.bam
   """
 }
 
@@ -122,11 +122,11 @@ process '2_rnaseq_gatk' {
   input: 
   file genome from genome_file 
   file index from genome_index
-  file output_groupFile
+  set file(bam), file(index) from output_groupFile
   file genome_dict
   
   """
-  $GATK -T SplitNCigarReads -R $genome -I $output_groupFile -o split.bam -rf ReassignOneMappingQuality -RMQF 255 -RMQT 60 -U ALLOW_N_CIGAR_READS --fix_misencoded_quality_scores
+  $GATK -T SplitNCigarReads -R $genome -I $bam -o split.bam -rf ReassignOneMappingQuality -RMQF 255 -RMQT 60 -U ALLOW_N_CIGAR_READS --fix_misencoded_quality_scores
   """
 }
 
