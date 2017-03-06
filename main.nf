@@ -149,7 +149,7 @@ process '2_rnaseq_gatk_recalibrate' {
   set file(variant_file), file(variant_file_index) from prepared_vcf.first()
 
   output:
-  set pairId, file('final.uniq.bam'), file('final.uniq.bam.bai') into output_final
+  set pairId, file("${pairId}.final.uniq.bam"), file("${pairId}.final.uniq.bam.bai") into output_final
   
   """
   #  Indel Realignment and Base Recalibration
