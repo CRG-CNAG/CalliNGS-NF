@@ -134,7 +134,6 @@ process '2_rnaseq_gatk_split_n_cigar' {
   
   """
   # Split'N'Trim and reassign mapping qualities
-  
   $GATK -T SplitNCigarReads -R $genome -I $bam -o split.bam -rf ReassignOneMappingQuality -RMQF 255 -RMQT 60 -U ALLOW_N_CIGAR_READS --fix_misencoded_quality_scores
   """
 }
@@ -150,14 +149,19 @@ process '2_rnaseq_gatk_recalibrate' {
   set file(variant_file), file(variant_file_index) from prepared_vcf
 
   output:
-  set file('final.bam'), file('final.bai') into output_final
+  set file('final.uniq.bam'), file('final.uniq.bam.bai') into output_final
   
   """
   #  Indel Realignment and Base Recalibration
-
   $GATK -T BaseRecalibrator -nct 8 --default_platform illumina -cov ReadGroupCovariate -cov QualityScoreCovariate -cov CycleCovariate -knownSites $variant_file -cov ContextCovariate -R $genome -I $bam --downsampling_type NONE -o final.rnaseq.grp
-
   $GATK -T PrintReads -R $genome -I $bam -BQSR final.rnaseq.grp -o final.bam
+
+  # Select only unique alignments, no multimaps
+  (samtools view -H $baseRecFile2; samtools view $baseRecFile2| grep -w 'NH:i:1') \
+  |samtools view -Sb -  > final.uniq.bam
+
+  # Index BAM files
+  samtools index final.uniq.bam
   """
 }
 
