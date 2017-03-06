@@ -135,3 +135,25 @@ process '2_rnaseq_gatk_split_n_cigar' {
   """
 }
 
+process '2_rnaseq_gatk_recalibrate' {
+  container 'biodckrdev/gatk'
+  
+  input: 
+  file genome from genome_file 
+  file index from genome_index
+  set file(bam), file(index) from output_split
+  file genome_dict
+  file variant_file
+
+  output:
+  set file('final.bam'), file('final.bam.bai') into output_split
+  
+  """
+  #  Indel Realignment and Base Recalibration
+
+  $GATK -T BaseRecalibrator -nct 8 --default_platform illumina -cov ReadGroupCovariate -cov QualityScoreCovariate -cov CycleCovariate -knownSites $variant_file -cov ContextCovariate -R $genome -I $bam --downsampling_type NONE -o final.rnaseq.grp
+
+  $GATK -T PrintReads -R $genome -I $bam -BQSR final.rnaseq.grp -o final.bam
+  """
+}
+
