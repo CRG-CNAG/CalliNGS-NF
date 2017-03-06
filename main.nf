@@ -165,3 +165,27 @@ process '2_rnaseq_gatk_recalibrate' {
   """
 }
 
+# define closure for grouping replicates
+def grouper = { bam, bai ->
+    def m = (bam.baseName =~ /([^12]+)[12].*\.bam]/)
+    m[0][1]
+}
+
+# group replicates
+output_final.groupBy(grouper).flatMap().map {
+  it.value.flatten().sort()
+}.into { merged_replicates }
+
+process '3_rnaseq_call_variants' {
+  container 'biodckrdev/gatk'
+
+  input:
+  file genome from genome_file
+  file bams from merged_replicates
+
+  """
+  $GATK -T HaplotypeCaller -R $genome -I $bams -dontUseSoftClippedBases -stand_call_conf 20.0 -stand_emit_conf 20.0 -o output.samtools.vcf.gz
+  """
+
+}
+
