@@ -87,7 +87,7 @@ process '1b_prepare_vcf_file' {
   set file("${variantFile.baseName}.filtered.recode.vcf.gz"), file("${variantFile.baseName}.filtered.recode.vcf.gz.tbi") into prepared_vcf
     
   """
-  vcftools --gzvcf $variantFile -c --exclude-bed $blacklisted --recode | bgzip -c --out > ${variantFile.baseName}.filtered.recode.vcf.gz
+  vcftools --gzvcf $variantFile -c --exclude-bed $blacklisted --recode | bgzip -c > ${variantFile.baseName}.filtered.recode.vcf.gz
   tabix ${variantFile.baseName}.filtered.recode.vcf.gz
   """
 }
