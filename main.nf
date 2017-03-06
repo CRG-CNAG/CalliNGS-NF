@@ -61,7 +61,7 @@ process '1a_prepape_genome_star' {
  */
 process '1a_prepape_genome_samtools' {
   input: file genome from genome_file 
-  output: file "${genome}.fai" into genome_index 
+  output: file "${genome}.fai" into genome_index, genome_index1  
   
   """
   samtools faidx $genome
@@ -70,7 +70,7 @@ process '1a_prepape_genome_samtools' {
 
 process '1a_prepare_genome_picard' {
   input: file genome from genome_file 
-  output: file "${genome.baseName}.dict" into genome_dict
+  output: file "${genome.baseName}.dict" into genome_dict, genome_dict1
   
   """
   PICARD=`which picard.jar`
@@ -140,9 +140,9 @@ process '2_rnaseq_gatk_recalibrate' {
   
   input: 
   file genome from genome_file 
-  file index from genome_index
+  file index from genome_index1
   set file(bam), file(index) from output_split
-  file genome_dict
+  file genome_dict1
   file variant_file
 
   output:
