@@ -150,7 +150,7 @@ process '2_rnaseq_gatk_recalibrate' {
   set file(variant_file), file(variant_file_index) from prepared_vcf
 
   output:
-  set file('final.bam'), file('final.bam.bai') into output_final
+  set file('final.bam'), file('final.bai') into output_final
   
   """
   #  Indel Realignment and Base Recalibration
