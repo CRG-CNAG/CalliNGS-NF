@@ -116,7 +116,7 @@ process '2_rnaseq_star' {
   """
 }
 
-process '2_rnaseq_gatk' {
+process '2_rnaseq_gatk_split_n_cigar' {
   container 'biodckrdev/gatk'
   
   input: 
@@ -124,8 +124,13 @@ process '2_rnaseq_gatk' {
   file index from genome_index
   set file(bam), file(index) from output_groupFile
   file genome_dict
+
+  output:
+  set file('split.bam'), file('split.bam.bai') into output_split
   
   """
+  # Split'N'Trim and reassign mapping qualities
+  
   $GATK -T SplitNCigarReads -R $genome -I $bam -o split.bam -rf ReassignOneMappingQuality -RMQF 255 -RMQT 60 -U ALLOW_N_CIGAR_READS --fix_misencoded_quality_scores
   """
 }
