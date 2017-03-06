@@ -9,4 +9,4 @@ The pipline needs the following tools:
 
 A Docker container with the tools can be built from the `Dockerfile` present in this folder.
 
-A prebuilt Docker container is available at ...
+A prebuilt Docker container is available at the Docker hub as `cbcrg/ngs2017ws-nf`.
