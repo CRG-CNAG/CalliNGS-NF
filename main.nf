@@ -146,7 +146,7 @@ process '2_rnaseq_gatk_recalibrate' {
   file variant_file
 
   output:
-  set file('final.bam'), file('final.bam.bai') into output_split
+  set file('final.bam'), file('final.bam.bai') into output_final
   
   """
   #  Indel Realignment and Base Recalibration
