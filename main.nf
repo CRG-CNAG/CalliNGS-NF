@@ -157,7 +157,7 @@ process '2_rnaseq_gatk_recalibrate' {
   $GATK -T PrintReads -R $genome -I $bam -BQSR final.rnaseq.grp -o final.bam
 
   # Select only unique alignments, no multimaps
-  (samtools view -H $baseRecFile2; samtools view $baseRecFile2| grep -w 'NH:i:1') \
+  (samtools view -H final.bam; samtools view final.bam| grep -w 'NH:i:1') \
   |samtools view -Sb -  > final.uniq.bam
 
   # Index BAM files
