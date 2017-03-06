@@ -130,7 +130,7 @@ process '2_rnaseq_gatk_split_n_cigar' {
   file genome_dict
 
   output:
-  set file('split.bam'), file('split.bam.bai') into output_split
+  set file('split.bam'), file('split.bai') into output_split
   
   """
   # Split'N'Trim and reassign mapping qualities
