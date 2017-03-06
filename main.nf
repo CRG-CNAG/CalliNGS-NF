@@ -125,9 +125,9 @@ process '2_rnaseq_gatk_split_n_cigar' {
   
   input: 
   file genome from genome_file 
-  file index from genome_index
+  file index from genome_index.first()
   set file(bam), file(index) from output_groupFile
-  file genome_dict
+  file genome_dict from genome_dict.first()
 
   output:
   set file('split.bam'), file('split.bai') into output_split
@@ -143,10 +143,10 @@ process '2_rnaseq_gatk_recalibrate' {
   
   input: 
   file genome from genome_file 
-  file index from genome_index1
+  file index from genome_index1.first()
   set file(bam), file(index) from output_split
-  file genome_dict1
-  set file(variant_file), file(variant_file_index) from prepared_vcf
+  file genome_dict1 from genome_dict1.first()
+  set file(variant_file), file(variant_file_index) from prepared_vcf.first()
 
   output:
   set file('final.uniq.bam'), file('final.uniq.bam.bai') into output_final
