@@ -158,10 +158,10 @@ process '2_rnaseq_gatk_recalibrate' {
 
   # Select only unique alignments, no multimaps
   (samtools view -H final.bam; samtools view final.bam| grep -w 'NH:i:1') \
-  |samtools view -Sb -  > final.uniq.bam
+  |samtools view -Sb -  > ${pairId}.final.uniq.bam
 
   # Index BAM files
-  samtools index final.uniq.bam
+  samtools index ${pairId}.final.uniq.bam
   """
 }
 
