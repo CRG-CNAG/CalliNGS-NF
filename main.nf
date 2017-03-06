@@ -59,7 +59,7 @@ process '1a_prepape_genome_star' {
  * For the Split and Trim GATK tool I need index file *.fai for genome and *.dict file for genome
  * to create dictionary and index files for genome
  */
-process '1a_prepape_genome_samtools' {
+process '1a_prepare_genome_samtools' {
   input: file genome from genome_file 
   output: file "${genome}.fai" into genome_index, genome_index1, genome_index2  
   
@@ -70,7 +70,7 @@ process '1a_prepape_genome_samtools' {
 
 process '1a_prepare_genome_picard' {
   input: file genome from genome_file 
-  output: file "${genome.baseName}.dict" into genome_dict, genome_dict1
+  output: file "${genome.baseName}.dict" into genome_dict, genome_dict1, genome_dict2
   
   """
   PICARD=`which picard.jar`
@@ -145,7 +145,7 @@ process '2_rnaseq_gatk_recalibrate' {
   file genome from genome_file 
   file index from genome_index1.first()
   set pairId, file(bam), file(index) from output_split
-  file genome_dict1 from genome_dict1.first()
+  file genome_dict from genome_dict1.first()
   set file(variant_file), file(variant_file_index) from prepared_vcf.first()
 
   output:
@@ -182,6 +182,7 @@ process '3_rnaseq_call_variants' {
   input:
   file genome from genome_file
   file index from genome_index2.first()
+  file genome_dict from genome_dict2.first()
   set repId, file(bam1), file(index1), file(bam2), file(index2) from merged_replicates
 
   """
