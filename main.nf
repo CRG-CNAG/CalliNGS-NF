@@ -109,7 +109,10 @@ process '2_rnaseq_star' {
   STAR --runMode genomeGenerate --genomeDir genomeDir --genomeFastaFiles $genome --sjdbFileChrStartEnd SJ.out.tab --sjdbOverhang 75 --runThreadN ${task.cpus}  
     
   # Final alignments  
-  STAR --genomeDir genomeDir --readFilesIn $reads --runThreadN ${task.cpus} --readFilesCommand zcat --outFilterType BySJout --alignSJoverhangMin 8 --alignSJDBoverhangMin 1 --outFilterMismatchNmax 999 --outSAMtype BAM SortedByCoordinate --outSAMattrRGline ID:$pairId LB:library PL:illumina PU:machine SM:GM12878 
+  STAR --genomeDir genomeDir --readFilesIn $reads --runThreadN ${task.cpus} --readFilesCommand zcat --outFilterType BySJout --alignSJoverhangMin 8 --alignSJDBoverhangMin 1 --outFilterMismatchNmax 999 --outSAMtype BAM SortedByCoordinate --outSAMattrRGline ID:$pairId LB:library PL:illumina PU:machine SM:GM12878
+
+  # Index the BAM file
+  #samtools index Aligned.sortedByCoord.out.bam
   """
 }
 
@@ -123,7 +126,6 @@ process '2_rnaseq_gatk' {
   file genome_dict
   
   """
-  samtools index Aligned.sortedByCoord.out.bam
   $GATK -T SplitNCigarReads -R $genome -I $output_groupFile -o split.bam -rf ReassignOneMappingQuality -RMQF 255 -RMQT 60 -U ALLOW_N_CIGAR_READS --fix_misencoded_quality_scores
   """
 }
