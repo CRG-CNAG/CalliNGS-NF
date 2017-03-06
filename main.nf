@@ -165,13 +165,13 @@ process '2_rnaseq_gatk_recalibrate' {
   """
 }
 
-# define closure for grouping replicates
+// define closure for grouping replicates
 def grouper = { bam, bai ->
     def m = (bam.baseName =~ /([^12]+)[12].*\.bam]/)
     m[0][1]
 }
 
-# group replicates
+// group replicates
 output_final.groupBy(grouper).flatMap().map {
   it.value.flatten().sort()
 }.into { merged_replicates }
