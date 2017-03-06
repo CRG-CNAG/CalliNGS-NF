@@ -186,7 +186,11 @@ process '3_rnaseq_call_variants' {
   set repId, file(bam1), file(index1), file(bam2), file(index2) from merged_replicates
 
   """
-  $GATK -T HaplotypeCaller -R $genome -I $bam1 -I $bam2 -dontUseSoftClippedBases -stand_call_conf 20.0 -stand_emit_conf 20.0 -o output.samtools.vcf.gz
+  # Variant calling
+  $GATK -T HaplotypeCaller -R $genome -I $bam1 -I $bam2 -dontUseSoftClippedBases -stand_call_conf 20.0 -stand_emit_conf 20.0 -o output.gatk.vcf.gz
+
+  # Variant filtering
+  $GATK -T VariantFiltration -R $genome -V output.gatk.vcf.gz -window 35 -cluster 3 -filterName FS -filter "FS > 30.0" -filterName QD -filter "QD < 2.0" -o final.gatk.vcf
   """
 
 }
