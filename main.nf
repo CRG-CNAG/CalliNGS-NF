@@ -125,7 +125,6 @@ process '2_rnaseq_gatk' {
   """
   samtools index Aligned.sortedByCoord.out.bam
   $GATK -T SplitNCigarReads -R $genome -I $output_groupFile -o split.bam -rf ReassignOneMappingQuality -RMQF 255 -RMQT 60 -U ALLOW_N_CIGAR_READS --fix_misencoded_quality_scores
-
   """
 }
 
