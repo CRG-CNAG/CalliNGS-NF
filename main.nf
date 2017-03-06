@@ -61,7 +61,7 @@ process '1a_prepape_genome_star' {
  */
 process '1a_prepape_genome_samtools' {
   input: file genome from genome_file 
-  output: file "${genome}.fai" into genome_index, genome_index1  
+  output: file "${genome}.fai" into genome_index, genome_index1, genome_index2  
   
   """
   samtools faidx $genome
@@ -181,6 +181,7 @@ process '3_rnaseq_call_variants' {
 
   input:
   file genome from genome_file
+  file index from genome_index2.first()
   set repId, file(bam1), file(index1), file(bam2), file(index2) from merged_replicates
 
   """
