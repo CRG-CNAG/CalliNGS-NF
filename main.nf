@@ -34,7 +34,8 @@ params.genome = "$baseDir/data/genome.fa"
 params.variant = "$baseDir/data/NA12878.chr22.vcf.gz"
 params.blacklist = "$baseDir/data/ENCFF001TDO.sorted.bed" 
 params.reads = "$baseDir/data/*_{1,2}.fastq.gz"
-params.gatk = 'GenomeAnalysisTK'
+params.results = "results"
+params.gatk = '/usr/local/bin/GenomeAnalysisTK.jar'
 
 GATK = params.gatk
 genome_file = file(params.genome)
@@ -61,7 +62,7 @@ process '1a_prepape_genome_star' {
  */
 process '1a_prepare_genome_samtools' {
   input: file genome from genome_file 
-  output: file "${genome}.fai" into genome_index, genome_index1, genome_index2  
+  output: file "${genome}.fai" into genome_index, genome_index1, genome_index2, genome_index3  
   
   """
   samtools faidx $genome
@@ -70,7 +71,7 @@ process '1a_prepare_genome_samtools' {
 
 process '1a_prepare_genome_picard' {
   input: file genome from genome_file 
-  output: file "${genome.baseName}.dict" into genome_dict, genome_dict1, genome_dict2
+  output: file "${genome.baseName}.dict" into genome_dict, genome_dict1, genome_dict2, genome_dict3
   
   """
   PICARD=`which picard.jar`
@@ -84,7 +85,7 @@ process '1b_prepare_vcf_file' {
   file(blacklisted) from blacklist_file
 
   output:
-  set file("${variantFile.baseName}.filtered.recode.vcf.gz"), file("${variantFile.baseName}.filtered.recode.vcf.gz.tbi") into prepared_vcf
+  set file("${variantFile.baseName}.filtered.recode.vcf.gz"), file("${variantFile.baseName}.filtered.recode.vcf.gz.tbi") into (prepared_vcf, prepared_vcf2)
     
   """
   vcftools --gzvcf $variantFile -c --exclude-bed $blacklisted --recode | bgzip -c > ${variantFile.baseName}.filtered.recode.vcf.gz
@@ -121,8 +122,7 @@ process '2_rnaseq_star' {
 }
 
 process '2_rnaseq_gatk_split_n_cigar' {
-  container 'biodckrdev/gatk'
-  
+
   input: 
   file genome from genome_file 
   file index from genome_index.first()
@@ -134,12 +134,11 @@ process '2_rnaseq_gatk_split_n_cigar' {
   
   """
   # Split'N'Trim and reassign mapping qualities
-  $GATK -T SplitNCigarReads -R $genome -I $bam -o split.bam -rf ReassignOneMappingQuality -RMQF 255 -RMQT 60 -U ALLOW_N_CIGAR_READS --fix_misencoded_quality_scores
+  java -jar $GATK -T SplitNCigarReads -R $genome -I $bam -o split.bam -rf ReassignOneMappingQuality -RMQF 255 -RMQT 60 -U ALLOW_N_CIGAR_READS --fix_misencoded_quality_scores
   """
 }
 
 process '2_rnaseq_gatk_recalibrate' {
-  container 'biodckrdev/gatk'
   
   input: 
   file genome from genome_file 
@@ -149,12 +148,14 @@ process '2_rnaseq_gatk_recalibrate' {
   set file(variant_file), file(variant_file_index) from prepared_vcf.first()
 
   output:
-  set pairId, file("${pairId}.final.uniq.bam"), file("${pairId}.final.uniq.bam.bai") into output_final
+  set replicateId, file("${pairId}.final.uniq.bam"), file("${pairId}.final.uniq.bam.bai") into (output_final, bam_for_ae)
   
+  script: 
+  replicateId = pairId.replaceAll(/[12]$/,'')
   """
   #  Indel Realignment and Base Recalibration
-  $GATK -T BaseRecalibrator -nct 8 --default_platform illumina -cov ReadGroupCovariate -cov QualityScoreCovariate -cov CycleCovariate -knownSites $variant_file -cov ContextCovariate -R $genome -I $bam --downsampling_type NONE -o final.rnaseq.grp
-  $GATK -T PrintReads -R $genome -I $bam -BQSR final.rnaseq.grp -o final.bam
+  java -jar $GATK -T BaseRecalibrator -nct 8 --default_platform illumina -cov ReadGroupCovariate -cov QualityScoreCovariate -cov CycleCovariate -knownSites $variant_file -cov ContextCovariate -R $genome -I $bam --downsampling_type NONE -o final.rnaseq.grp
+  java -jar $GATK -T PrintReads -R $genome -I $bam -BQSR final.rnaseq.grp -o final.bam
 
   # Select only unique alignments, no multimaps
   (samtools view -H final.bam; samtools view final.bam| grep -w 'NH:i:1') \
@@ -165,33 +166,95 @@ process '2_rnaseq_gatk_recalibrate' {
   """
 }
 
-// define closure for grouping replicates
-def grouper = { id, bam, bai ->
-    def m = (id =~ /([^12]+)[12]/)
-    m[0][1]
-}
 
-// group replicates
-output_final.groupBy(grouper).flatMap().map {
-  [it.key] + [it.value[0][1..-1],it.value[1][1..-1]].flatten().sort()
-}.into { merged_replicates }
 
 process '3_rnaseq_call_variants' {
-  container 'biodckrdev/gatk'
+  publishDir params.results
 
   input:
   file genome from genome_file
   file index from genome_index2.first()
   file genome_dict from genome_dict2.first()
-  set repId, file(bam1), file(index1), file(bam2), file(index2) from merged_replicates
+  set replicateId, file(bam), file(index) from output_final.groupTuple()
+  
+  output: 
+  set replicateId, file('*.final.vcf') into vcf_files
 
   """
+  echo "${bam.join('\n')}" > bam.list
+  
   # Variant calling
-  $GATK -T HaplotypeCaller -R $genome -I $bam1 -I $bam2 -dontUseSoftClippedBases -stand_call_conf 20.0 -stand_emit_conf 20.0 -o output.gatk.vcf.gz
+  java -jar $GATK -T HaplotypeCaller -R $genome -I bam.list -dontUseSoftClippedBases -stand_call_conf 20.0 -o output.gatk.vcf.gz
 
   # Variant filtering
-  $GATK -T VariantFiltration -R $genome -V output.gatk.vcf.gz -window 35 -cluster 3 -filterName FS -filter "FS > 30.0" -filterName QD -filter "QD < 2.0" -o final.gatk.vcf
+  java -jar $GATK -T VariantFiltration -R $genome -V output.gatk.vcf.gz -window 35 -cluster 3 -filterName FS -filter "FS > 30.0" -filterName QD -filter "QD < 2.0" -o ${replicateId}.final.vcf
   """
 
 }
 
+process '4_process_vcf' {
+  publishDir params.results
+  
+  input:
+  set replicateId, file('final.vcf') from vcf_files
+  set file('filtered.recode.vcf.gz'), file('filtered.recode.vcf.gz.tbi') from prepared_vcf2.first()
+  
+  output: 
+  set replicateId, file('final.vcf'), file('result.commonSNPs.diff.sites_in_files') into vcf_and_snps_ch
+  
+  
+  '''
+  grep -v '#' final.vcf | awk '$7~/PASS/' |perl -ne 'chomp($_); ($dp)=$_=~/DP\\=(\\d+)\\;/; if($dp>=8){print $_."\\n"};' > result.DP8.vcf
+  
+  vcftools --vcf result.DP8.vcf --gzdiff filtered.recode.vcf.gz  --diff-site --out result.commonSNPs
+  
+  '''
+  
+}
+
+process '4_prepare_vcf_for_ase' {
+  input: 
+  set replicateId, file('final.vcf'), file('result.commonSNPs.diff.sites_in_files') from vcf_and_snps_ch
+
+  output: 
+  set replicateId, file('out.recode.vcf') into vcf_for_ae
+
+  '''
+    awk 'BEGIN{OFS="\t"} $4~/B/{print $1,$2,$3}' result.commonSNPs.diff.sites_in_files  > test.bed
+    
+    vcftools --vcf  final.vcf --bed test.bed --recode --keep-INFO-all
+  '''
+
+}
+
+bam_for_ae
+  .groupTuple()
+  .phase(vcf_for_ae)
+  .map{ left, right -> 
+    def repId = left[0]
+    def bam = left[1]
+    def bai = left[2]
+    def vcf = right[1]
+    tuple(repId, vcf, bam, bai)  
+  }
+  .set { gropped_vcf_bam_bai }
+
+
+process '5_AE_knownSNPs' {
+  publishDir params.results
+  
+  input:
+  file genome from genome_file 
+  file index from genome_index3
+  file dict from genome_dict3
+  set replicateId, file(vcf),  file(bam), file(bai) from gropped_vcf_bam_bai
+  
+  output:
+  file 'ASER.out'
+  
+  """
+  echo "${bam.join('\n')}" > bam.list
+    
+  java -jar $GATK -R $genome -T ASEReadCounter -o ASER.out -I bam.list -sites $vcf
+  """
+}
