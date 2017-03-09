@@ -62,7 +62,7 @@ process '1a_prepape_genome_star' {
  */
 process '1a_prepare_genome_samtools' {
   input: file genome from genome_file 
-  output: file "${genome}.fai" into genome_index, genome_index1, genome_index2, genome_index3  
+  output: file "${genome}.fai" into genome_index  
   
   """
   samtools faidx $genome
@@ -71,7 +71,7 @@ process '1a_prepare_genome_samtools' {
 
 process '1a_prepare_genome_picard' {
   input: file genome from genome_file 
-  output: file "${genome.baseName}.dict" into genome_dict, genome_dict1, genome_dict2, genome_dict3
+  output: file "${genome.baseName}.dict" into genome_dict
   
   """
   PICARD=`which picard.jar`
@@ -85,7 +85,7 @@ process '1b_prepare_vcf_file' {
   file(blacklisted) from blacklist_file
 
   output:
-  set file("${variantFile.baseName}.filtered.recode.vcf.gz"), file("${variantFile.baseName}.filtered.recode.vcf.gz.tbi") into (prepared_vcf, prepared_vcf2)
+  set file("${variantFile.baseName}.filtered.recode.vcf.gz"), file("${variantFile.baseName}.filtered.recode.vcf.gz.tbi") into prepared_vcf
     
   """
   vcftools --gzvcf $variantFile -c --exclude-bed $blacklisted --recode | bgzip -c > ${variantFile.baseName}.filtered.recode.vcf.gz
@@ -99,7 +99,7 @@ process '1b_prepare_vcf_file' {
 process '2_rnaseq_star' {
   input: 
   file genome from genome_file 
-  file genomeDir from genome_index_ch.first()
+  file genomeDir from genome_index_ch
   set pairId, file(reads) from reads_ch 
 
   output: 
@@ -125,9 +125,9 @@ process '2_rnaseq_gatk_split_n_cigar' {
 
   input: 
   file genome from genome_file 
-  file index from genome_index.first()
+  file index from genome_index
   set pairId, file(bam), file(index) from output_groupFile
-  file genome_dict from genome_dict.first()
+  file genome_dict from genome_dict
 
   output:
   set pairId, file('split.bam'), file('split.bai') into output_split
@@ -142,10 +142,10 @@ process '2_rnaseq_gatk_recalibrate' {
   
   input: 
   file genome from genome_file 
-  file index from genome_index1.first()
+  file index from genome_index
   set pairId, file(bam), file(index) from output_split
-  file genome_dict from genome_dict1.first()
-  set file(variant_file), file(variant_file_index) from prepared_vcf.first()
+  file genome_dict from genome_dict
+  set file(variant_file), file(variant_file_index) from prepared_vcf
 
   output:
   set replicateId, file("${pairId}.final.uniq.bam"), file("${pairId}.final.uniq.bam.bai") into (output_final, bam_for_ae)
@@ -173,8 +173,8 @@ process '3_rnaseq_call_variants' {
 
   input:
   file genome from genome_file
-  file index from genome_index2.first()
-  file genome_dict from genome_dict2.first()
+  file index from genome_index
+  file genome_dict from genome_dict
   set replicateId, file(bam), file(index) from output_final.groupTuple()
   
   output: 
@@ -197,7 +197,7 @@ process '4_process_vcf' {
   
   input:
   set replicateId, file('final.vcf') from vcf_files
-  set file('filtered.recode.vcf.gz'), file('filtered.recode.vcf.gz.tbi') from prepared_vcf2.first()
+  set file('filtered.recode.vcf.gz'), file('filtered.recode.vcf.gz.tbi') from prepared_vcf
   
   output: 
   set replicateId, file('final.vcf'), file('result.commonSNPs.diff.sites_in_files') into vcf_and_snps_ch
@@ -245,8 +245,8 @@ process '5_AE_knownSNPs' {
   
   input:
   file genome from genome_file 
-  file index from genome_index3
-  file dict from genome_dict3
+  file index from genome_index
+  file dict from genome_dict
   set replicateId, file(vcf),  file(bam), file(bai) from gropped_vcf_bam_bai
   
   output:
