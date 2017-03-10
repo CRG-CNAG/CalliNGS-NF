@@ -29,6 +29,5 @@ Launch the pipeline execution with the following command:
 ## Pipeline Description
 
 ## Schematic Outline
-![alt tag](https://raw.githubusercontent.com/CRG-CNAG/ngs2017ws-nf/callings-nf/figures/workflow.png)
-
+![Image](../callings-nf-dev/figures/workflow.png?raw=true)
 
