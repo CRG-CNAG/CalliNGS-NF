@@ -1,3 +1,6 @@
+trace*
+timeline*
+dag*
 .git
 .nextflow*
 work
