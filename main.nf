@@ -162,7 +162,7 @@ process '2_rnaseq_mapping_star' {
       set pairId, file('Aligned.sortedByCoord.out.bam'), file('Aligned.sortedByCoord.out.bam.bai') into output_groupFile
 
   """
-  # Align reads to genome
+  #ngs-nf-dev Align reads to genome
   STAR --genomeDir $genomeDir \
        --readFilesIn $reads \
        --runThreadN ${task.cpus} \
