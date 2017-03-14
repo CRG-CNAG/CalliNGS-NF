@@ -1,7 +1,7 @@
 # NGS 2017 Post-Conference Workshop
 
-A Nextflow pipeline for basic Variant Calling Analysis with RNA-seq data
-
+## CalliNGS-NF
+A Nextflow pipeline for basic Variant Calling Analysis with NGS RNA-Seq data
 
 ## Quickstart 
 
@@ -23,7 +23,11 @@ Download the `GenomeAnalysisTK.jar` from [this link](https://software.broadinsti
 
 Launch the pipeline execution with the following command: 
 
-    NXF_VER=0.24.0-SNAPSHOT run main.nf 
+    NXF_VER=0.24.0-SNAPSHOT nextflow run main.nf 
 
 
+## Pipeline Description
 
+
+## Schematic Outline
+![Image](../callings-nf-dev/figures/workflow.png?raw=true)
