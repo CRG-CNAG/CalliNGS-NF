@@ -111,7 +111,7 @@ process '1C_prepare_genome_picard' {
   
   """
   PICARD=`which picard.jar`
-  java -jar -XX:ParallelGCThreads=8 \$PICARD CreateSequenceDictionary R= $genome O= ${genome.baseName}.dict
+  java -jar \$PICARD CreateSequenceDictionary R= $genome O= ${genome.baseName}.dict
   """
 }
 
@@ -362,7 +362,6 @@ process '6A_post_process_vcf' {
   grep -v '#' final.vcf | awk '$7~/PASS/' |perl -ne 'chomp($_); ($dp)=$_=~/DP\\=(\\d+)\\;/; if($dp>=8){print $_."\\n"};' > result.DP8.vcf
   
   vcftools --vcf result.DP8.vcf --gzdiff filtered.recode.vcf.gz  --diff-site --out result.commonSNPs
-  
   '''
 }
 
