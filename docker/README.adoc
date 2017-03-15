@@ -6,6 +6,7 @@ The pipline needs the following tools:
 - https://software.broadinstitute.org/gatk/[Genome Analysis Toolkit (GATK)]
 - https://github.com/alexdobin/STAR[STAR] - RNA mapper
 - http://www.htslib.org/[samtools]
+- http://cran.r-project.org[R]
 
 A Docker container with all tools except the Genome Analysis Toolkit can be built from the `Dockerfile` present in this folder.
 
