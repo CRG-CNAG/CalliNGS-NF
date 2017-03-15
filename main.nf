@@ -370,16 +370,27 @@ process '6A_post_process_vcf' {
  */
 
 process '6B_prepare_vcf_for_ase' {
+  publishDir params.results
   input: 
       set replicateId, file('final.vcf'), file('result.commonSNPs.diff.sites_in_files') from vcf_and_snps_ch
 
   output: 
       set replicateId, file('out.recode.vcf') into vcf_for_ASE
+      file('gghist.out.pdf') into gghist_pdfs
 
   '''
   awk 'BEGIN{OFS="\t"} $4~/B/{print $1,$2,$3}' result.commonSNPs.diff.sites_in_files  > test.bed
     
   vcftools --vcf  final.vcf --bed test.bed --recode --keep-INFO-all
+
+  grep -v '#'  out.recode.vcf|awk -F '\\t' '{print $10}' \
+               |awk -F ':' '{print $2}'|perl -ne 'chomp($_); \
+               @v=split(/\\,/,$_); if($v[0]!=0 ||$v[1] !=0)\
+               {print  $v[1]/($v[1]+$v[0])."\\n"; }' |awk '$1!=1' \
+               >AF.4R
+
+  gghist.R -i AF.4R
+
   '''
 }
 

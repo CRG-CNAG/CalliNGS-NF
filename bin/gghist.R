@@ -289,7 +289,7 @@ if (!is.null(opt$title)) {gp = gp + ggtitle(opt$title)}
 
 gp = gp + labs(y=opt$y_title)
 
-gp = gp + coord_cartesian(expand=FALSE)
+gp = gp + coord_cartesian()
 
 if (opt$flip) {
 	gp = gp + coord_flip()
