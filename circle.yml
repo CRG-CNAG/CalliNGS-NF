@@ -1,0 +1,15 @@
+machine:
+  java:
+    version: oraclejdk8
+  services:
+    - docker
+    
+test:
+  pre:
+    - $(aws ecr get-login --region us-east-1)
+    - docker pull 885800555707.dkr.ecr.us-east-1.amazonaws.com/cbcrg/callings-with-gatk:latest
+    - curl -fsSL get.nextflow.io | bash 
+  override:
+    - NXF_VER=0.24.0-SNAPSHOT ./nextflow run . -profile circleci
+
+
