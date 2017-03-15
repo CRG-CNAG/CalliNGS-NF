@@ -40,7 +40,7 @@
 params.genome     = "$baseDir/data/genome.fa"
 params.variants   = "$baseDir/data/known_variants.vcf.gz"
 params.blacklist  = "$baseDir/data/blacklist.bed" 
-params.reads      = "$baseDir/data/reads/*_{1,2}.fastq.gz"
+params.reads      = "$baseDir/data/reads/*_{1,2}.fq.gz"
 params.results    = "results"
 params.gatk       = '/usr/local/bin/GenomeAnalysisTK.jar'
 
