@@ -62,12 +62,10 @@ reads_ch        = Channel.fromFilePairs(params.reads)
  */
 
 process '1A_prepare_star_genome_index' {
-
   input: 
       file(genome) from genome_file 
-
   output: 
-      file(genome_dir) into genome_index_ch
+      file(genome_dir) into genome_dir_ch
 
   """
   mkdir genome_dir
@@ -84,13 +82,12 @@ process '1A_prepare_star_genome_index' {
  * Process 1B: Create a FASTA genome index (.fai) with samtools for GATK
  */
 
-process '1B_prepare_genome_samtools' {
-  
+process '1B_prepare_genome_samtools' { 
   input: 
       file genome from genome_file 
-  
+ 
   output: 
-      file "${genome}.fai" into genome_index  
+      file "${genome}.fai" into genome_index_ch  
   
   """
   samtools faidx ${genome}
@@ -102,12 +99,11 @@ process '1B_prepare_genome_samtools' {
  * Process 1C: Create a FASTA genome sequence dictionary with Picard for GATK  
  */
 
-process '1C_prepare_genome_picard' {
- 
+process '1C_prepare_genome_picard' { 
   input: 
       file genome from genome_file 
   output: 
-      file "${genome.baseName}.dict" into genome_dict
+      file "${genome.baseName}.dict" into genome_dict_ch
   
   """
   PICARD=`which picard.jar`
@@ -121,13 +117,12 @@ process '1C_prepare_genome_picard' {
 
 
 process '1D_prepare_vcf_file' {
-
   input: 
       file(variantsFile) from variants_file
       file(blacklisted) from blacklist_file
 
   output:
-      set file("${variantsFile.baseName}.filtered.recode.vcf.gz"), file("${variantsFile.baseName}.filtered.recode.vcf.gz.tbi") into prepared_vcf
+      set file("${variantsFile.baseName}.filtered.recode.vcf.gz"), file("${variantsFile.baseName}.filtered.recode.vcf.gz.tbi") into prepared_vcf_ch
     
   """
   vcftools --gzvcf $variantsFile -c \
@@ -155,11 +150,11 @@ process '2_rnaseq_mapping_star' {
 
   input: 
       file genome from genome_file 
-      file genomeDir from genome_index_ch
+      file genomeDir from genome_dir_ch
       set pairId, file(reads) from reads_ch 
 
   output: 
-      set pairId, file('Aligned.sortedByCoord.out.bam'), file('Aligned.sortedByCoord.out.bam.bai') into output_groupFile
+      set pairId, file('Aligned.sortedByCoord.out.bam'), file('Aligned.sortedByCoord.out.bam.bai') into aligned_bam_ch
 
   """
   #ngs-nf-dev Align reads to genome
@@ -216,12 +211,12 @@ process '3_rnaseq_gatk_splitNcigar' {
 
   input: 
       file genome from genome_file 
-      file index from genome_index
-      file genome_dict from genome_dict
-      set pairId, file(bam), file(index) from output_groupFile
+      file index from genome_index_ch
+      file genome_dict from genome_dict_ch
+      set pairId, file(bam), file(index) from aligned_bam_ch
 
   output:
-      set pairId, file('split.bam'), file('split.bai') into output_split
+      set pairId, file('split.bam'), file('split.bai') into splitted_bam_ch
   
   """
   # SplitNCigarReads and reassign mapping qualities
@@ -252,13 +247,13 @@ process '4_rnaseq_gatk_recalibrate' {
   
   input: 
       file genome from genome_file 
-      file index from genome_index
-      file genome_dict from genome_dict
-      set pairId, file(bam), file(index) from output_split
-      set file(variants_file), file(variants_file_index) from prepared_vcf
+      file index from genome_index_ch
+      file dict from genome_dict_ch
+      set pairId, file(bam), file(index) from splitted_bam_ch
+      set file(variants_file), file(variants_file_index) from prepared_vcf_ch
 
   output:
-      set replicateId, file("${pairId}.final.uniq.bam"), file("${pairId}.final.uniq.bam.bai") into (output_final, bam_for_ASE)
+      set replicateId, file("${pairId}.final.uniq.bam"), file("${pairId}.final.uniq.bam.bai") into (final_output_ch, bam_for_ASE_ch)
   
   script: 
   replicateId = pairId.replaceAll(/[12]$/,'')
@@ -310,9 +305,9 @@ process '5_rnaseq_call_variants' {
 
   input:
       file genome from genome_file
-      file index from genome_index
-      file genome_dict from genome_dict
-      set replicateId, file(bam), file(index) from output_final.groupTuple()
+      file index from genome_index_ch
+      file dict from genome_dict_ch
+      set replicateId, file(bam), file(index) from final_output_ch.groupTuple()
   
   output: 
       set replicateId, file('*.final.vcf') into vcf_files
@@ -349,12 +344,10 @@ process '5_rnaseq_call_variants' {
  */
 
 process '6A_post_process_vcf' {
-  publishDir params.results
-  
+  publishDir params.results  
   input:
       set replicateId, file('final.vcf') from vcf_files
-      set file('filtered.recode.vcf.gz'), file('filtered.recode.vcf.gz.tbi') from prepared_vcf
-  
+      set file('filtered.recode.vcf.gz'), file('filtered.recode.vcf.gz.tbi') from prepared_vcf_ch 
   output: 
       set replicateId, file('final.vcf'), file('result.commonSNPs.diff.sites_in_files') into vcf_and_snps_ch
   
@@ -373,7 +366,6 @@ process '6B_prepare_vcf_for_ase' {
   publishDir params.results
   input: 
       set replicateId, file('final.vcf'), file('result.commonSNPs.diff.sites_in_files') from vcf_and_snps_ch
-
   output: 
       set replicateId, file('out.recode.vcf') into vcf_for_ASE
       file('gghist.out.pdf') into gghist_pdfs
@@ -399,17 +391,17 @@ process '6B_prepare_vcf_for_ase' {
  * Group data for allele-specific expression
  */
 
-bam_for_ASE
-  .groupTuple()
-  .phase(vcf_for_ASE)
-  .map{ left, right -> 
-    def repId = left[0]
-    def bam = left[1]
-    def bai = left[2]
-    def vcf = right[1]
-    tuple(repId, vcf, bam, bai)  
-  }
-  .set { grouped_vcf_bam_bai }
+bam_for_ASE_ch
+    .groupTuple()
+    .phase(vcf_for_ASE)
+    .map{ left, right -> 
+      def repId = left[0]
+      def bam = left[1]
+      def bai = left[2]
+      def vcf = right[1]
+      tuple(repId, vcf, bam, bai)  
+    }
+    .set { grouped_vcf_bam_bai_ch }
 
 
 /* 
@@ -420,16 +412,15 @@ bam_for_ASE
  */
 
 process '6C_ASE_knownSNPs' {
-  publishDir params.results
-  
+  publishDir params.results 
   input:
-  file genome from genome_file 
-  file index from genome_index
-  file dict from genome_dict
-  set val(replicateId), file(vcf),  file(bam), file(bai) from grouped_vcf_bam_bai
+      file genome from genome_file 
+      file index from genome_index_ch
+      file dict from genome_dict_ch
+      set val(replicateId), file(vcf),  file(bam), file(bai) from grouped_vcf_bam_bai_ch
   
   output:
-  file 'ASER.out'
+      file 'ASER.out'
   
   """
   echo "${bam.join('\n')}" > bam.list
