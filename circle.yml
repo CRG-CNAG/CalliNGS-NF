@@ -11,4 +11,4 @@ test:
     - curl -fsSL get.nextflow.io | bash 
   override:
     - NXF_VER=0.24.0-SNAPSHOT ./nextflow run . -profile circleci
-    - bash validate-ci.sh
+    - bash -x validate-ci.sh
