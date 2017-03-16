@@ -7,12 +7,12 @@ A Nextflow pipeline for basic Variant Calling Analysis with NGS RNA-Seq data
 
 Clone the repository in your computer and change to the project root directory: 
 
-    https://github.com/CRG-CNAG/ngs2017ws-nf.git
-    cd CRG-CNAG/ngs2017ws-nf.git
+    git clone https://github.com/CRG-CNAG/CalliNGS-NF.git
+    cd CalliNGS-NF.git
 
 Download the Docker image with this command: 
 
-    docker pull cbcrg/ngs2017ws-nf
+    docker pull cbcrg/callings-nf@sha256:b65a7d721b9dd2da07d6bdd7f868b04039860f14fa514add975c59e68614c310
     
 Note: the Docker image contains all the required dependencies except GATK with 
 cannot be included due to its license restriction. 
