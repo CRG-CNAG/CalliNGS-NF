@@ -268,11 +268,13 @@ process '4_rnaseq_gatk_recalibrate' {
                   -cov ContextCovariate \
                   -R ${genome} -I ${bam} \
                   --downsampling_type NONE \
-                  -o final.rnaseq.grp
+                  -nt ${task.cpus} \
+                  -o final.rnaseq.grp 
 
   java -jar $GATK -T PrintReads \
                   -R ${genome} -I ${bam} \
                   -BQSR final.rnaseq.grp \
+                  -nt ${task.cpus} \
                   -o final.bam
 
   # Select only unique alignments, no multimaps
@@ -320,6 +322,7 @@ process '5_rnaseq_call_variants' {
                   -R $genome -I bam.list \
                   -dontUseSoftClippedBases \
                   -stand_call_conf 20.0 \
+                  -nt ${task.cpus} \
                   -o output.gatk.vcf.gz
 
   # Variant filtering
