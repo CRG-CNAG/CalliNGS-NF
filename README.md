@@ -14,7 +14,7 @@ Download the Docker image with this command:
 
     docker pull cbcrg/callings-nf@sha256:b65a7d721b9dd2da07d6bdd7f868b04039860f14fa514add975c59e68614c310
     
-Note: the Docker image contains all the required dependencies except GATK with 
+Note: the Docker image contains all the required dependencies except GATK which 
 cannot be included due to its license restriction. 
 
 Download the `GenomeAnalysisTK.jar` from [this link](https://software.broadinstitute.org/gatk/download/)
