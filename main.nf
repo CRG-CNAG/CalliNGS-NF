@@ -167,7 +167,7 @@ process '2_rnaseq_mapping_star' {
        --alignSJDBoverhangMin 1 \
        --outFilterMismatchNmax 999
     
-  # 2nd pass (improve alignmnets using table of splice junctions and create a new index)  
+  # 2nd pass (improve alignmets using table of splice junctions and create a new index)  
   mkdir genomeDir  
   STAR --runMode genomeGenerate \
        --genomeDir genomeDir \
@@ -391,7 +391,20 @@ process '6B_prepare_vcf_for_ase' {
 
 
 /* 
- * Group data for allele-specific expression
+ * Group data for allele-specific expression.
+ * 
+ * The `bam_for_ASE_ch` emites tuples having the following structure, holding the final BAM/BAI files:
+ *  
+ *   ( replicate_id, file_bam, file_bai )
+ * 
+ * The `vcf_for_ASE` channel emits tuples having the following structure, holding the VCF file:
+ *  
+ *   ( replicateId, output.vcf ) 
+ * 
+ * The BAMs are grouped together and merged with VCFs having the same replicate id. Finally 
+ * it creates a channel named `grouped_vcf_bam_bai_ch` emitting the following tuples: 
+ *  
+ *   ( replicate_id, file_vcf, List[file_bam], List[file_bai] )
  */
 
 bam_for_ASE_ch
