@@ -62,6 +62,8 @@ reads_ch        = Channel.fromFilePairs(params.reads)
  */
 
 process '1A_prepare_star_genome_index' {
+  tag "$genome.baseName"
+  
   input: 
       file(genome) from genome_file 
   output: 
@@ -83,6 +85,8 @@ process '1A_prepare_star_genome_index' {
  */
 
 process '1B_prepare_genome_samtools' { 
+  tag "$genome.baseName"
+  
   input: 
       file genome from genome_file 
  
@@ -100,6 +104,8 @@ process '1B_prepare_genome_samtools' {
  */
 
 process '1C_prepare_genome_picard' { 
+  tag "$genome.baseName"
+  
   input: 
       file genome from genome_file 
   output: 
@@ -117,6 +123,8 @@ process '1C_prepare_genome_picard' {
 
 
 process '1D_prepare_vcf_file' {
+  tag "$variantsFile.baseName"
+
   input: 
       file(variantsFile) from variants_file
       file(blacklisted) from blacklist_file
@@ -147,6 +155,7 @@ process '1D_prepare_vcf_file' {
  */
 
 process '2_rnaseq_mapping_star' {
+  tag "$pairId"
 
   input: 
       file genome from genome_file 
@@ -208,7 +217,8 @@ process '2_rnaseq_mapping_star' {
  */
 
 process '3_rnaseq_gatk_splitNcigar' {
-
+  tag "$pairId"
+  
   input: 
       file genome from genome_file 
       file index from genome_index_ch
@@ -244,7 +254,8 @@ process '3_rnaseq_gatk_splitNcigar' {
  */
 
 process '4_rnaseq_gatk_recalibrate' {
-  
+  tag "$pairId"
+    
   input: 
       file genome from genome_file 
       file index from genome_index_ch
@@ -303,6 +314,7 @@ process '4_rnaseq_gatk_recalibrate' {
 
 
 process '5_rnaseq_call_variants' {
+  tag "$replicateId"
   publishDir params.results
 
   input:
@@ -347,7 +359,9 @@ process '5_rnaseq_call_variants' {
  */
 
 process '6A_post_process_vcf' {
+  tag "$replicateId"
   publishDir params.results  
+  
   input:
       set replicateId, file('final.vcf') from vcf_files
       set file('filtered.recode.vcf.gz'), file('filtered.recode.vcf.gz.tbi') from prepared_vcf_ch 
@@ -366,7 +380,9 @@ process '6A_post_process_vcf' {
  */
 
 process '6B_prepare_vcf_for_ase' {
+  tag "$replicateId"
   publishDir params.results
+  
   input: 
       set replicateId, file('final.vcf'), file('result.commonSNPs.diff.sites_in_files') from vcf_and_snps_ch
   output: 
@@ -428,12 +444,14 @@ bam_for_ASE_ch
  */
 
 process '6C_ASE_knownSNPs' {
+  tag "$replicateId"
   publishDir params.results 
+  
   input:
       file genome from genome_file 
       file index from genome_index_ch
       file dict from genome_dict_ch
-      set val(replicateId), file(vcf),  file(bam), file(bai) from grouped_vcf_bam_bai_ch
+      set replicateId, file(vcf),  file(bam), file(bai) from grouped_vcf_bam_bai_ch
   
   output:
       file 'ASER.out'
