@@ -23,7 +23,7 @@ Download the `GenomeAnalysisTK.jar` from [this link](https://software.broadinsti
 
 Launch the pipeline execution with the following command: 
 
-    NXF_VER=0.24.0-SNAPSHOT nextflow run main.nf 
+    nextflow run main.nf 
 
 
 ## Pipeline Description
