@@ -69,6 +69,7 @@ process '1A_prepare_star_genome_index' {
   output: 
       file(genome_dir) into genome_dir_ch
 
+  script:  
   """
   mkdir genome_dir
 
@@ -93,6 +94,7 @@ process '1B_prepare_genome_samtools' {
   output: 
       file "${genome}.fai" into genome_index_ch  
   
+  script:
   """
   samtools faidx ${genome}
   """
@@ -111,6 +113,7 @@ process '1C_prepare_genome_picard' {
   output: 
       file "${genome.baseName}.dict" into genome_dict_ch
   
+  script:
   """
   PICARD=`which picard.jar`
   java -jar \$PICARD CreateSequenceDictionary R= $genome O= ${genome.baseName}.dict
@@ -131,7 +134,8 @@ process '1D_prepare_vcf_file' {
 
   output:
       set file("${variantsFile.baseName}.filtered.recode.vcf.gz"), file("${variantsFile.baseName}.filtered.recode.vcf.gz.tbi") into prepared_vcf_ch
-    
+  
+  script:  
   """
   vcftools --gzvcf $variantsFile -c \
            --exclude-bed ${blacklisted} \
@@ -165,8 +169,9 @@ process '2_rnaseq_mapping_star' {
   output: 
       set pairId, file('Aligned.sortedByCoord.out.bam'), file('Aligned.sortedByCoord.out.bam.bai') into aligned_bam_ch
 
+  script:    
   """
-  #ngs-nf-dev Align reads to genome
+  # ngs-nf-dev Align reads to genome
   STAR --genomeDir $genomeDir \
        --readFilesIn $reads \
        --runThreadN ${task.cpus} \
@@ -228,6 +233,7 @@ process '3_rnaseq_gatk_splitNcigar' {
   output:
       set pairId, file('split.bam'), file('split.bai') into splitted_bam_ch
   
+  script:
   """
   # SplitNCigarReads and reassign mapping qualities
   java -jar $GATK -T SplitNCigarReads \
@@ -326,6 +332,7 @@ process '5_rnaseq_call_variants' {
   output: 
       set replicateId, file('*.final.vcf') into vcf_files
 
+  script:
   """
   echo "${bam.join('\n')}" > bam.list
   
@@ -368,6 +375,7 @@ process '6A_post_process_vcf' {
   output: 
       set replicateId, file('final.vcf'), file('result.commonSNPs.diff.sites_in_files') into vcf_and_snps_ch
   
+  script:
   '''
   grep -v '#' final.vcf | awk '$7~/PASS/' |perl -ne 'chomp($_); ($dp)=$_=~/DP\\=(\\d+)\\;/; if($dp>=8){print $_."\\n"};' > result.DP8.vcf
   
@@ -389,6 +397,7 @@ process '6B_prepare_vcf_for_ase' {
       set replicateId, file('out.recode.vcf') into vcf_for_ASE
       file('gghist.out.pdf') into gghist_pdfs
 
+  script:
   '''
   awk 'BEGIN{OFS="\t"} $4~/B/{print $1,$2,$3}' result.commonSNPs.diff.sites_in_files  > test.bed
     
@@ -456,6 +465,7 @@ process '6C_ASE_knownSNPs' {
   output:
       file 'ASER.out'
   
+  script:
   """
   echo "${bam.join('\n')}" > bam.list
     
