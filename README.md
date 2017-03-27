@@ -28,7 +28,20 @@ Launch the pipeline execution with the following command:
 
 ## Pipeline Description
 
-The RNA sequencing (RNA-seq) data, in additional to the expression information, can be used to obtain information about somatic variants present in the genes of the organism. The goal of this pipeline is to process RNAseq data to obtain  small variants, single polymorphisms (SNPs) and small INDELs (insertions, deletions). The pipeline is an implementation of the GATK Best Practices for variant calling on RNAseq and include all major steps of the analysis. 
+The RNA sequencing (RNA-seq) data, in additional to the expression information, can be used to obtain information about somatic variants present in the genes of the organism. The CalliNGS-NF pipeline process RNAseq data to obtain small variants(SNVs), single polymorphisms (SNPs) and small INDELs (insertions, deletions). This pipeline is an implementation of the GATK Best Practices for variant calling on RNAseq and include all major steps of the analysis, [link](http://gatkforums.broadinstitute.org/gatk/discussion/3892/the-gatk-best-practices-for-variant-calling-on-rnaseq-in-full-detail). 
+
+In additional to the GATK best practics, the pipeline includes steps to compare obtained SNVs with known variants and to calculate allele specific counts for the overlapped SNVs.
+
+## Input files
+
+The CalliNGS-NF pipeline needs as the imput following files:
+* RNAseq reads, *.fastq format
+* Genome assembly, *.fa format
+* Known variants, *.vcf format
+
+## Pipeline results
+
+The pipeline creates a number of output files inside a current working folder. 
 
 ## Schematic Outline
 ![Image](../callings-nf-dev/figures/workflow.png?raw=true)
