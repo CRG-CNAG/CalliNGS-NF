@@ -28,7 +28,7 @@ Launch the pipeline execution with the following command:
 
 ## Pipeline Description
 
-The RNA sequencing (RNA-seq) data, in additional to the expression information, can be used to obtain information about somatic variants present in the genes of the organism. The CalliNGS-NF pipeline process RNAseq data to obtain small variants(SNVs), single polymorphisms (SNPs) and small INDELs (insertions, deletions). This pipeline is an implementation of the GATK Best Practices for variant calling on RNAseq and include all major steps of the analysis, [link](http://gatkforums.broadinstitute.org/gatk/discussion/3892/the-gatk-best-practices-for-variant-calling-on-rnaseq-in-full-detail). 
+The RNA sequencing (RNA-seq) data, in additional to the expression information, can be used to obtain somatic variants present in the genes of the analysed organism. The CalliNGS-NF pipeline process RNAseq data to obtain small variants(SNVs), single polymorphisms (SNPs) and small INDELs (insertions, deletions). The pipeline is an implementation of the GATK Best Practices for variant calling on RNAseq and include all major steps of the analysis, [link](http://gatkforums.broadinstitute.org/gatk/discussion/3892/the-gatk-best-practices-for-variant-calling-on-rnaseq-in-full-detail). 
 
 In additional to the GATK best practics, the pipeline includes steps to compare obtained SNVs with known variants and to calculate allele specific counts for the overlapped SNVs.
 
@@ -41,7 +41,14 @@ The CalliNGS-NF pipeline needs as the imput following files:
 
 ## Pipeline results
 
-The pipeline creates a number of output files inside a current working folder. 
+For each sample with `sampleID` the pipeline creates a number of output files inside a current working folder.
+Here is a brief description of output files:
+* sampleID.final.vcf contains somatic SNVs called from the RNAseq data
+* sampleID.diff.sites_in_files contains comparison of the SNVs from RNAseq data with the set of known variants
+* sampleID.known.vcf contains SNVs that are common between RNAseq calls and known variants
+* sampleID.ASE.tsv contains allele counts at a positions of SNVs (only for common SNVs)
+* sampleID.FA.hisotgram.pdf contains a histogram plot for allele frequency (only for common SNVs)
+
 
 ## Schematic Outline
 ![Image](../callings-nf-dev/figures/workflow.png?raw=true)
