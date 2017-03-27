@@ -35,9 +35,9 @@ In additional to the GATK best practics, the pipeline includes steps to compare 
 ## Input files
 
 The CalliNGS-NF pipeline needs as the imput following files:
-* RNAseq reads, *.fastq format
-* Genome assembly, *.fa format
-* Known variants, *.vcf format
+* RNAseq reads, *.fastq
+* Genome assembly, *.fa
+* Known variants, *.vcf
 
 ## Pipeline results
 
