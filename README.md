@@ -43,11 +43,11 @@ The CalliNGS-NF pipeline needs as the imput following files:
 
 For each sample with `sampleID` the pipeline creates a number of output files inside a current working folder.
 Here is a brief description of output files:
-* sampleID.final.vcf contains somatic SNVs called from the RNAseq data
-* sampleID.diff.sites_in_files contains comparison of the SNVs from RNAseq data with the set of known variants
-* sampleID.known.vcf contains SNVs that are common between RNAseq calls and known variants
-* sampleID.ASE.tsv contains allele counts at a positions of SNVs (only for common SNVs)
-* sampleID.FA.hisotgram.pdf contains a histogram plot for allele frequency (only for common SNVs)
+* <i>`sampleID`.final.vcf</i>,  somatic SNVs called from the RNAseq data
+* <i>`sampleID`.diff.sites_in_filesM</i>, comparison of the SNVs from RNAseq data with the set of known variants
+* <i>`sampleID`.known.vcf</i>, SNVs that are common between RNAseq calls and known variants
+* <i>`sampleID`.ASE.tsv</i>, allele counts at a positions of SNVs (only for common SNVs)
+* <i>`sampleID`.FA.hisotgram.pdf</i>, a histogram plot for allele frequency (only for common SNVs)
 
 
 ## Schematic Outline
