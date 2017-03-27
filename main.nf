@@ -44,6 +44,16 @@ params.reads      = "$baseDir/data/reads/rep1_{1,2}.fq.gz"
 params.results    = "results"
 params.gatk       = '/usr/local/bin/GenomeAnalysisTK.jar'
 
+log.info "C A L L I N G S  -  N F    v 1.0" 
+log.info "================================"
+log.info "genome   : $params.genome"
+log.info "reads    : $params.reads"
+log.info "variants : $params.variants"
+log.info "blacklist: $params.blacklist"
+log.info "results  : $params.results" 
+log.info "gtak     : $params.gatk"
+log.info ""
+
 /*
  *  Parse the input parameters
  */
