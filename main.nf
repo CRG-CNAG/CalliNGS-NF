@@ -331,7 +331,6 @@ process '4_rnaseq_gatk_recalibrate' {
 
 process '5_rnaseq_call_variants' {
   tag "$replicateId"
-  publishDir params.results
 
   input:
       file genome from genome_file
@@ -340,7 +339,7 @@ process '5_rnaseq_call_variants' {
       set replicateId, file(bam), file(index) from final_output_ch.groupTuple()
   
   output: 
-      set replicateId, file('*.final.vcf') into vcf_files
+      set replicateId, file('final.vcf') into vcf_files
 
   script:
   """
@@ -360,7 +359,7 @@ process '5_rnaseq_call_variants' {
                   -window 35 -cluster 3 \
                   -filterName FS -filter "FS > 30.0" \
                   -filterName QD -filter "QD < 2.0" \
-                  -o ${replicateId}.final.vcf
+                  -o final.vcf
   """
 }
 
@@ -377,19 +376,19 @@ process '5_rnaseq_call_variants' {
 
 process '6A_post_process_vcf' {
   tag "$replicateId"
-  publishDir params.results  
+  publishDir "$params.results/$replicateId" 
   
   input:
-      set replicateId, file(vcf) from vcf_files
+      set replicateId, file('final.vcf') from vcf_files
       set file('filtered.recode.vcf.gz'), file('filtered.recode.vcf.gz.tbi') from prepared_vcf_ch 
   output: 
-      set replicateId, file(vcf), file("${replicateId}.diff.sites_in_files") into vcf_and_snps_ch
+      set replicateId, file('final.vcf'), file('commonSNPs.diff.sites_in_files') into vcf_and_snps_ch
   
-  shell:
+  script:
   '''
-  grep -v '#' !{vcf} | awk '$7~/PASS/' |perl -ne 'chomp($_); ($dp)=$_=~/DP\\=(\\d+)\\;/; if($dp>=8){print $_."\\n"};' > result.DP8.vcf
+  grep -v '#' final.vcf | awk '$7~/PASS/' |perl -ne 'chomp($_); ($dp)=$_=~/DP\\=(\\d+)\\;/; if($dp>=8){print $_."\\n"};' > result.DP8.vcf
   
-  vcftools --vcf result.DP8.vcf --gzdiff filtered.recode.vcf.gz  --diff-site --out !{replicateId}
+  vcftools --vcf result.DP8.vcf --gzdiff filtered.recode.vcf.gz  --diff-site --out commonSNPs
   '''
 }
 
@@ -399,27 +398,27 @@ process '6A_post_process_vcf' {
 
 process '6B_prepare_vcf_for_ase' {
   tag "$replicateId"
-  publishDir params.results
+  publishDir "$params.results/$replicateId" 
   
   input: 
-      set replicateId, file(vcf), file(diff) from vcf_and_snps_ch
+      set replicateId, file('final.vcf'), file('commonSNPs.diff.sites_in_files') from vcf_and_snps_ch
   output: 
-      set replicateId, file("${replicateId}.known_snps.vcf") into vcf_for_ASE
-      file("${replicateId}.AF.histogram.pdf") into gghist_pdfs
+      set replicateId, file('known_snps.vcf') into vcf_for_ASE
+      file('AF.histogram.pdf') into gghist_pdfs
 
-  shell:
+  script:
   '''
-  awk 'BEGIN{OFS="\t"} $4~/B/{print $1,$2,$3}' !{diff}  > test.bed
+  awk 'BEGIN{OFS="\t"} $4~/B/{print $1,$2,$3}' commonSNPs.diff.sites_in_files  > test.bed
     
-  vcftools --vcf !{vcf} --bed test.bed --recode --keep-INFO-all --stdout > !{replicateId}.known_snps.vcf
+  vcftools --vcf final.vcf --bed test.bed --recode --keep-INFO-all --stdout > known_snps.vcf
 
-  grep -v '#'  !{replicateId}.known_snps.vcf | awk -F '\\t' '{print $10}' \
+  grep -v '#'  known_snps.vcf | awk -F '\\t' '{print $10}' \
                |awk -F ':' '{print $2}'|perl -ne 'chomp($_); \
                @v=split(/\\,/,$_); if($v[0]!=0 ||$v[1] !=0)\
                {print  $v[1]/($v[1]+$v[0])."\\n"; }' |awk '$1!=1' \
                >AF.4R
 
-  gghist.R -i AF.4R -o !{replicateId}.AF.histogram.pdf
+  gghist.R -i AF.4R -o AF.histogram.pdf
   '''
 }
 
@@ -463,7 +462,7 @@ bam_for_ASE_ch
 
 process '6C_ASE_knownSNPs' {
   tag "$replicateId"
-  publishDir params.results 
+  publishDir "$params.results/$replicateId" 
   
   input:
       file genome from genome_file 
@@ -472,7 +471,7 @@ process '6C_ASE_knownSNPs' {
       set replicateId, file(vcf),  file(bam), file(bai) from grouped_vcf_bam_bai_ch
   
   output:
-      file "${replicateId}.ASE.tsv"
+      file "ASE.tsv"
   
   script:
   """
@@ -480,7 +479,7 @@ process '6C_ASE_knownSNPs' {
     
   java -jar $GATK -R ${genome} \
                   -T ASEReadCounter \
-                  -o ${replicateId}.ASE.tsv \
+                  -o ASE.tsv \
                   -I bam.list \
                   -sites ${vcf}
   """
