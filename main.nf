@@ -58,34 +58,10 @@ reads_ch        = Channel.fromFilePairs(params.reads)
 /**********
  * PART 1: Data preparation
  *
- * Process 1A: Create STAR genome index file.
+ * Process 1A: Create a FASTA genome index (.fai) with samtools for GATK
  */
 
-process '1A_prepare_star_genome_index' {
-  tag "$genome.baseName"
-  
-  input: 
-      file(genome) from genome_file 
-  output: 
-      file(genome_dir) into genome_dir_ch
-
-  script:  
-  """
-  mkdir genome_dir
-
-  STAR --runMode genomeGenerate \
-       --genomeDir genome_dir \
-       --genomeFastaFiles ${genome} \
-       --runThreadN ${task.cpus}
-  """
-}
-
-
-/* 
- * Process 1B: Create a FASTA genome index (.fai) with samtools for GATK
- */
-
-process '1B_prepare_genome_samtools' { 
+process '1A_prepare_genome_samtools' { 
   tag "$genome.baseName"
   
   input: 
@@ -102,17 +78,17 @@ process '1B_prepare_genome_samtools' {
 
 
 /*
- * Process 1C: Create a FASTA genome sequence dictionary with Picard for GATK  
+ * Process 1B: Create a FASTA genome sequence dictionary with Picard for GATK
  */
 
-process '1C_prepare_genome_picard' { 
+process '1B_prepare_genome_picard' {
   tag "$genome.baseName"
-  
-  input: 
-      file genome from genome_file 
-  output: 
+
+  input:
+      file genome from genome_file
+  output:
       file "${genome.baseName}.dict" into genome_dict_ch
-  
+
   script:
   """
   PICARD=`which picard.jar`
@@ -120,10 +96,34 @@ process '1C_prepare_genome_picard' {
   """
 }
 
+
+/*
+ * Process 1C: Create STAR genome index file.
+ */
+
+process '1C_prepare_star_genome_index' {
+  tag "$genome.baseName"
+
+  input:
+      file(genome) from genome_file
+  output:
+      file(genome_dir) into genome_dir_ch
+
+  script:
+  """
+  mkdir genome_dir
+
+  STAR --runMode genomeGenerate \
+       --genomeDir genome_dir \
+       --genomeFastaFiles ${genome} \
+       --runThreadN ${task.cpus}
+  """
+}
+
+
 /*
  * Process 1D: Create a file containing the filtered and recoded set of variants
  */
-
 
 process '1D_prepare_vcf_file' {
   tag "$variantsFile.baseName"
