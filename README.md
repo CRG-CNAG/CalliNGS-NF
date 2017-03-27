@@ -38,6 +38,7 @@ The CalliNGS-NF pipeline needs as the input following files:
 * RNAseq reads, <i>*.fastq</i>
 * Genome assembly, <i>*.fa</i>
 * Known variants, <i>*.vcf</i>
+* Blacklisted regions of the genome, <i>*.bed</i>
 
 ## Pipeline results
 
