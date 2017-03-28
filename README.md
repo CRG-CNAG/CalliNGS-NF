@@ -35,20 +35,20 @@ In additional to the GATK best practics, the pipeline includes steps to compare 
 ## Input files
 
 The CalliNGS-NF pipeline needs as the input following files:
-* RNAseq reads, <i>*.fastq</i>
-* Genome assembly, <i>*.fa</i>
-* Known variants, <i>*.vcf</i>
-* Blacklisted regions of the genome, <i>*.bed</i>
+* RNAseq reads, `*.fastq`
+* Genome assembly, `*.fa`
+* Known variants, `*.vcf`
+* Blacklisted regions of the genome, `*.bed`
 
 ## Pipeline results
 
 For each sample with `sampleID` the pipeline creates a number of output files inside a current working folder.
 Here is a brief description of output files:
-* <i>`sampleID`/final.vcf</i>,  somatic SNVs called from the RNAseq data
-* <i>`sampleID`/diff.sites_in_filesM</i>, comparison of the SNVs from RNAseq data with the set of known variants
-* <i>`sampleID`/known.vcf</i>, SNVs that are common between RNAseq calls and known variants
-* <i>`sampleID`/ASE.tsv</i>, allele counts at a positions of SNVs (only for common SNVs)
-* <i>`sampleID`/FA.hisotgram.pdf</i>, a histogram plot for allele frequency (only for common SNVs)
+* `sampleID/final.vcf`,  somatic SNVs called from the RNAseq data
+* `sampleID/diff.sites_in_files`, comparison of the SNVs from RNAseq data with the set of known variants
+* `sampleID/known_snps.vcf`, SNVs that are common between RNAseq calls and known variants
+* `sampleID/ASE.tsv`, allele counts at a positions of SNVs (only for common SNVs)
+* `sampleID/AF.histogram.pdf`, a histogram plot for allele frequency (only for common SNVs)
 
 
 ## Schematic Outline
