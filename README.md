@@ -52,7 +52,7 @@ Here is a brief description of output files:
 
 
 ## Schematic Outline
-![Image](../callings-nf-dev/figures/workflow.png?raw=true)
+![Image](../master/figures/workflow.png?raw=true)
 
 ## Requirements 
 
