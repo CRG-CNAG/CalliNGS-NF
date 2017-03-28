@@ -287,7 +287,7 @@ process '4_rnaseq_gatk_recalibrate' {
   """
   # Indel Realignment and Base Recalibration
   java -jar $GATK -T BaseRecalibrator \
-                  -nct 8 --default_platform illumina \
+                  --default_platform illumina \
                   -cov ReadGroupCovariate \
                   -cov QualityScoreCovariate \
                   -cov CycleCovariate \
@@ -295,13 +295,13 @@ process '4_rnaseq_gatk_recalibrate' {
                   -cov ContextCovariate \
                   -R ${genome} -I ${bam} \
                   --downsampling_type NONE \
-                  -nt ${task.cpus} \
+                  -nct ${task.cpus} \
                   -o final.rnaseq.grp 
 
   java -jar $GATK -T PrintReads \
                   -R ${genome} -I ${bam} \
                   -BQSR final.rnaseq.grp \
-                  -nt ${task.cpus} \
+                  -nct ${task.cpus} \
                   -o final.bam
 
   # Select only unique alignments, no multimaps
@@ -350,7 +350,6 @@ process '5_rnaseq_call_variants' {
                   -R $genome -I bam.list \
                   -dontUseSoftClippedBases \
                   -stand_call_conf 20.0 \
-                  -nt ${task.cpus} \
                   -o output.gatk.vcf.gz
 
   # Variant filtering
