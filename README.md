@@ -17,7 +17,7 @@ Download the Docker image with this command (optional) :
     docker pull cbcrg/callings-nf@sha256:b65a7d721b9dd2da07d6bdd7f868b04039860f14fa514add975c59e68614c310
     
 Note: the Docker image contains all the required dependencies except GATK which 
-cannot be included due to license restriction. 
+cannot be included due to license restrictions. 
 
 Download the `GenomeAnalysisTK.jar` package from [this link](https://software.broadinstitute.org/gatk/download/).    
 
@@ -28,9 +28,9 @@ Launch the pipeline execution with the following command:
 
 ## Pipeline Description
 
-The RNA sequencing (RNA-seq) data, in additional to the expression information, can be used to obtain somatic variants present in the genes of the analysed organism. The CalliNGS-NF pipeline process RNAseq data to obtain small variants(SNVs), single polymorphisms (SNPs) and small INDELs (insertions, deletions). The pipeline is an implementation of the GATK Best Practices for variant calling on RNAseq and include all major steps of the analysis, [link](http://gatkforums.broadinstitute.org/gatk/discussion/3892/the-gatk-best-practices-for-variant-calling-on-rnaseq-in-full-detail). 
+The RNA sequencing (RNA-seq) data, in additional to the expression information, can be used to obtain somatic variants present in the genes of the analysed organism. The CalliNGS-NF pipeline processes RNAseq data to obtain small variants(SNVs), single polymorphisms (SNPs) and small INDELs (insertions, deletions). The pipeline is an implementation of the GATK Best Practices for variant calling on RNAseq and includes all major steps of the analysis, [link](http://gatkforums.broadinstitute.org/gatk/discussion/3892/the-gatk-best-practices-for-variant-calling-on-rnaseq-in-full-detail). 
 
-In additional to the GATK best practics, the pipeline includes steps to compare obtained SNVs with known variants and to calculate allele specific counts for the overlapped SNVs.
+In addition to the GATK best practics, the pipeline includes steps to compare obtained SNVs with known variants and to calculate allele specific counts for the overlapped SNVs.
 
 ## Input files
 
@@ -57,10 +57,10 @@ Here is a brief description of output files:
 ## Requirements 
 
 * Java 7/8
-* [Docker](https://www.docker.com/) 1.10 (or higher) or [Sigularity](http://singularity.lbl.gov) engine
+* [Docker](https://www.docker.com/) 1.10 (or higher) or [Singularity](http://singularity.lbl.gov) engine
 * [GATK](https://software.broadinstitute.org/gatk/) 3.7 
 
-Note: CalliNGS-NF can be used without a container engine installing in your system all the 
+Note: CalliNGS-NF can be used without a container engine by installing in your system all the 
 required software components reported in the following section. See the included 
 [Dockerfile](docker/Dockerfile) for the configuration details.
  
