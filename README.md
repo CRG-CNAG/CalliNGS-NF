@@ -42,11 +42,13 @@ The CalliNGS-NF pipeline needs as the input following files:
 
 The RNAseq read file names should match to this convension:
 
-<font color="#377eb8">sampleID</font><font color="#4daf4a">[1|2]</font>_<font color="#984ea3">{1,2}</font>.fastq.gz 
+`sampleID`[1|2]_{1,2}.fastq.gz 
 
->where <b>sampleID</b> is the name of the sample,
->first number <b>1,2,..</b> indicate different replicates, and 
->second number <b>1 or 2</b> indicate the first or the second read pair in the paired-end samples.
+where **sampleID** is the name of the sample,
+
+the first number **1,2,..** indicate different replicates, and 
+
+the second number **1 or 2** indicate the first or the second read pair in the paired-end samples.
 
 
 ## Pipeline results
