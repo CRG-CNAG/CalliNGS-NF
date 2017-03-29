@@ -169,15 +169,15 @@ process '1D_prepare_vcf_file' {
  */
 
 process '2_rnaseq_mapping_star' {
-  tag "$pairId"
+  tag "$replicateId"
 
   input: 
       file genome from genome_file 
       file genomeDir from genome_dir_ch
-      set pairId, file(reads) from reads_ch 
+      set replicateId, file(reads) from reads_ch 
 
   output: 
-      set pairId, file('Aligned.sortedByCoord.out.bam'), file('Aligned.sortedByCoord.out.bam.bai') into aligned_bam_ch
+      set replicateId, file('Aligned.sortedByCoord.out.bam'), file('Aligned.sortedByCoord.out.bam.bai') into aligned_bam_ch
 
   script:    
   """
@@ -210,7 +210,7 @@ process '2_rnaseq_mapping_star' {
        --alignSJDBoverhangMin 1 \
        --outFilterMismatchNmax 999 \
        --outSAMtype BAM SortedByCoordinate \
-       --outSAMattrRGline ID:$pairId LB:library PL:illumina PU:machine SM:GM12878
+       --outSAMattrRGline ID:$replicateId LB:library PL:illumina PU:machine SM:GM12878
 
   # Index the BAM file
   samtools index Aligned.sortedByCoord.out.bam
@@ -232,16 +232,16 @@ process '2_rnaseq_mapping_star' {
  */
 
 process '3_rnaseq_gatk_splitNcigar' {
-  tag "$pairId"
+  tag "$replicateId"
   
   input: 
       file genome from genome_file 
       file index from genome_index_ch
       file genome_dict from genome_dict_ch
-      set pairId, file(bam), file(index) from aligned_bam_ch
+      set replicateId, file(bam), file(index) from aligned_bam_ch
 
   output:
-      set pairId, file('split.bam'), file('split.bai') into splitted_bam_ch
+      set replicateId, file('split.bam'), file('split.bai') into splitted_bam_ch
   
   script:
   """
@@ -270,20 +270,20 @@ process '3_rnaseq_gatk_splitNcigar' {
  */
 
 process '4_rnaseq_gatk_recalibrate' {
-  tag "$pairId"
+  tag "$replicateId"
     
   input: 
       file genome from genome_file 
       file index from genome_index_ch
       file dict from genome_dict_ch
-      set pairId, file(bam), file(index) from splitted_bam_ch
+      set replicateId, file(bam), file(index) from splitted_bam_ch
       set file(variants_file), file(variants_file_index) from prepared_vcf_ch
 
   output:
-      set replicateId, file("${pairId}.final.uniq.bam"), file("${pairId}.final.uniq.bam.bai") into (final_output_ch, bam_for_ASE_ch)
+      set sampleId, file("${replicateId}.final.uniq.bam"), file("${replicateId}.final.uniq.bam.bai") into (final_output_ch, bam_for_ASE_ch)
   
   script: 
-  replicateId = pairId.replaceAll(/[12]$/,'')
+  sampleId = replicateId.replaceAll(/[12]$/,'')
   """
   # Indel Realignment and Base Recalibration
   java -jar $GATK -T BaseRecalibrator \
@@ -306,10 +306,10 @@ process '4_rnaseq_gatk_recalibrate' {
 
   # Select only unique alignments, no multimaps
   (samtools view -H final.bam; samtools view final.bam| grep -w 'NH:i:1') \
-  |samtools view -Sb -  > ${pairId}.final.uniq.bam
+  |samtools view -Sb -  > ${replicateId}.final.uniq.bam
 
   # Index BAM files
-  samtools index ${pairId}.final.uniq.bam
+  samtools index ${replicateId}.final.uniq.bam
   """
 }
 
@@ -330,16 +330,16 @@ process '4_rnaseq_gatk_recalibrate' {
 
 
 process '5_rnaseq_call_variants' {
-  tag "$replicateId"
+  tag "$sampleId"
 
   input:
       file genome from genome_file
       file index from genome_index_ch
       file dict from genome_dict_ch
-      set replicateId, file(bam), file(index) from final_output_ch.groupTuple()
+      set sampleId, file(bam), file(index) from final_output_ch.groupTuple()
   
   output: 
-      set replicateId, file('final.vcf') into vcf_files
+      set sampleId, file('final.vcf') into vcf_files
 
   script:
   """
@@ -374,14 +374,14 @@ process '5_rnaseq_call_variants' {
  */
 
 process '6A_post_process_vcf' {
-  tag "$replicateId"
-  publishDir "$params.results/$replicateId" 
+  tag "$sampleId"
+  publishDir "$params.results/$sampleId" 
   
   input:
-      set replicateId, file('final.vcf') from vcf_files
+      set sampleId, file('final.vcf') from vcf_files
       set file('filtered.recode.vcf.gz'), file('filtered.recode.vcf.gz.tbi') from prepared_vcf_ch 
   output: 
-      set replicateId, file('final.vcf'), file('commonSNPs.diff.sites_in_files') into vcf_and_snps_ch
+      set sampleId, file('final.vcf'), file('commonSNPs.diff.sites_in_files') into vcf_and_snps_ch
   
   script:
   '''
@@ -396,13 +396,13 @@ process '6A_post_process_vcf' {
  */
 
 process '6B_prepare_vcf_for_ase' {
-  tag "$replicateId"
-  publishDir "$params.results/$replicateId" 
+  tag "$sampleId"
+  publishDir "$params.results/$sampleId" 
   
   input: 
-      set replicateId, file('final.vcf'), file('commonSNPs.diff.sites_in_files') from vcf_and_snps_ch
+      set sampleId, file('final.vcf'), file('commonSNPs.diff.sites_in_files') from vcf_and_snps_ch
   output: 
-      set replicateId, file('known_snps.vcf') into vcf_for_ASE
+      set sampleId, file('known_snps.vcf') into vcf_for_ASE
       file('AF.histogram.pdf') into gghist_pdfs
 
   script:
@@ -431,7 +431,7 @@ process '6B_prepare_vcf_for_ase' {
  * 
  * The `vcf_for_ASE` channel emits tuples having the following structure, holding the VCF file:
  *  
- *   ( replicateId, output.vcf ) 
+ *   ( sampleId, output.vcf ) 
  * 
  * The BAMs are grouped together and merged with VCFs having the same replicate id. Finally 
  * it creates a channel named `grouped_vcf_bam_bai_ch` emitting the following tuples: 
@@ -460,14 +460,14 @@ bam_for_ASE_ch
  */
 
 process '6C_ASE_knownSNPs' {
-  tag "$replicateId"
-  publishDir "$params.results/$replicateId" 
+  tag "$sampleId"
+  publishDir "$params.results/$sampleId" 
   
   input:
       file genome from genome_file 
       file index from genome_index_ch
       file dict from genome_dict_ch
-      set replicateId, file(vcf),  file(bam), file(bai) from grouped_vcf_bam_bai_ch
+      set sampleId, file(vcf),  file(bam), file(bai) from grouped_vcf_bam_bai_ch
   
   output:
       file "ASE.tsv"
