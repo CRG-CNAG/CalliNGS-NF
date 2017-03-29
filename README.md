@@ -41,9 +41,13 @@ The CalliNGS-NF pipeline needs as the input following files:
 * Blacklisted regions of the genome, `*.bed`
 
 The RNAseq read file names should match to this convension:
+
 sampleID[1|2]_{1,2}.fastq.gz 
+
 where `sampleID` is the name of the sample,
+
       first number [1|2] indicate different replicates, and 
+      
       second number {1,2} indicate the first or the second read pair in the paired-end samples.
 
 
