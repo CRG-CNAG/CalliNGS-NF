@@ -40,9 +40,8 @@ The CalliNGS-NF pipeline needs as the input following files:
 * Known variants, `*.vcf`
 * Blacklisted regions of the genome, `*.bed`
 
-The RNAseq read file names should match to this convension:
+The RNAseq read file names should match to the convention  `sampleID`[1|2]_{1,2}.fastq.gz 
 
-`sampleID`[1|2]_{1,2}.fastq.gz 
 where 
 * **sampleID** is the identifier of the sample
 * the first number **1,2,..** is the replicate ID
