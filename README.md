@@ -8,7 +8,7 @@ A Nextflow pipeline for basic Variant Calling Analysis with NGS RNA-Seq data
 
 ## Quickstart 
 
-Install Nextflow by using the following commands: 
+Install Nextflow by using the following command: 
 
     curl get.nextflow.io | bash 
     
@@ -19,7 +19,7 @@ Download the Docker image with this command (optional) :
 Note: the Docker image contains all the required dependencies except GATK which 
 cannot be included due to license restriction. 
 
-Download the `GenomeAnalysisTK.jar` from [this link](https://software.broadinstitute.org/gatk/download/).    
+Download the `GenomeAnalysisTK.jar` package from [this link](https://software.broadinstitute.org/gatk/download/).    
 
 Launch the pipeline execution with the following command: 
 
