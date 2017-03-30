@@ -48,6 +48,76 @@ where
 * the second number **1 or 2** is the read pair in the paired-end samples.
 
 
+## Pipeline parameters
+
+#### `--reads` 
+   
+* Specifies the location of the reads *fastq* file(s).
+* Multiple files can be specified using the usual wildcards (*, ?), in this case make sure to surround the parameter string
+  value by single quote characters (see the example below)
+* By default it is set to the CalliNGS-NF's location: `$baseDir/data/reads/rep1_{1,2}.fq.gz`
+* See above for naming convention of samples, replicates and pairs read files.
+
+Example: 
+
+    $ nextflow run main.nf --reads '/home/dataset/*_[1|2]_{1,2}.fq.gz'
+
+
+#### `--genome`
+
+* The location of the genome fasta file.
+* It should end in `.fa`.
+* By default it is set to the CalliNGS-NF's location: `$baseDir/data/genome.fa`.
+
+Example:
+
+    $ nextflow run main.nf --genome /home/user/my_genome/human.fa
+    
+
+#### `--variants`
+
+* The location of the known variants VCF file.
+* It should end in `.vcf` or `vcf.gz`.
+* By default it is set to the CalliNGS-NF's location: `$baseDir/data/known_variants.vcf.gz`.
+
+Example:
+
+    $ nextflow run main.nf --variants /home/user/data/variants.vcf
+
+
+#### `--blacklist`
+
+* The location of the blacklisted genome regions in bed format.
+* It should end in `.bed`.
+* By default it is set to the CalliNGS-NF's location: `$baseDir/data/blacklist.bed`.
+
+Example:
+
+    $ nextflow run main.nf --blacklist /home/user/data/blacklisted_regions.bed
+
+
+#### `--gatk` 
+   
+* Specifies the location of the GATK jar file.
+* Download the `GenomeAnalysisTK.jar` package from [this link](https://software.broadinstitute.org/gatk/download/).
+* By default is set to CalliNGS-NF's locations: `/usr/local/bin/GenomeAnalysisTK.jar`.
+
+Example: 
+
+    $ nextflow run main.nf --gatk /home/bin/GenomeAnalysisTK.jar
+
+
+#### `--results` 
+   
+* Specifies the folder where the results will be stored for the user.  
+* It does not matter if the folder does not exist.
+* By default is set to CalliNGS-NF's folder: `results` 
+
+Example: 
+
+    $ nextflow run main.nf --output /home/user/my_results
+    
+    
 ## Pipeline results
 
 For each sample with `sampleID` the pipeline creates a number of output files inside a current working folder.
