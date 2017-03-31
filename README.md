@@ -23,7 +23,7 @@ Download the `GenomeAnalysisTK.jar` package from [this link](https://software.br
 
 Launch the pipeline execution with the following command: 
 
-    nextflow run CRG-CNAG/CalliNGS-NF --gatk <path/to/GenomeAnalysisTK.jar>
+    nextflow run CRG-CNAG/CalliNGS-NF --gatk </path/to/GenomeAnalysisTK.jar>
 
 
 ## Pipeline Description
@@ -115,7 +115,7 @@ Example:
 
 Example: 
 
-    $ nextflow run main.nf --output /home/user/my_results
+    $ nextflow run main.nf --results /home/user/my_results
     
     
 ## Pipeline results
