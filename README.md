@@ -40,19 +40,19 @@ The CalliNGS-NF pipeline needs as the input following files:
 * Known variants, `*.vcf`
 * Blacklisted regions of the genome, `*.bed`
 
-The RNAseq read file names should match to the convention  `sampleID`[1|2]_{1,2}.fastq.gz 
+The RNAseq read file names should match the following naming convention:  *sampleID{1,2}_{1,2}.extension* 
 
-where 
-* **sampleID** is the identifier of the sample
-* the first number **1,2,..** is the replicate ID
-* the second number **1 or 2** is the read pair in the paired-end samples.
-
+where: 
+* *sampleID* is the identifier of the sample;
+* the first number **1** or **2** is the replicate ID;
+* the second number **1** or **2** is the read pair in the paired-end samples;
+* *extension* is the read file name extension eg. `fq`, `fq.gz`, `fastq.gz`, etc. 
 
 ## Pipeline parameters
 
 #### `--reads` 
    
-* Specifies the location of the reads *fastq* file(s).
+* Specifies the location of the reads FASTQ file(s).
 * Multiple files can be specified using the usual wildcards (*, ?), in this case make sure to surround the parameter string
   value by single quote characters (see the example below)
 * By default it is set to the CalliNGS-NF's location: `$baseDir/data/reads/rep1_{1,2}.fq.gz`
@@ -60,7 +60,7 @@ where
 
 Example: 
 
-    $ nextflow run main.nf --reads '/home/dataset/*_[1|2]_{1,2}.fq.gz'
+    $ nextflow run CRG-CNAG/CalliNGS-NF --reads '/home/dataset/*_{1,2}.fq.gz'
 
 
 #### `--genome`
@@ -71,7 +71,7 @@ Example:
 
 Example:
 
-    $ nextflow run main.nf --genome /home/user/my_genome/human.fa
+    $ nextflow run CRG-CNAG/CalliNGS-NF --genome /home/user/my_genome/human.fa
     
 
 #### `--variants`
@@ -82,7 +82,7 @@ Example:
 
 Example:
 
-    $ nextflow run main.nf --variants /home/user/data/variants.vcf
+    $ nextflow run CRG-CNAG/CalliNGS-NF --variants /home/user/data/variants.vcf
 
 
 #### `--blacklist`
@@ -93,18 +93,7 @@ Example:
 
 Example:
 
-    $ nextflow run main.nf --blacklist /home/user/data/blacklisted_regions.bed
-
-
-#### `--gatk` 
-   
-* Specifies the location of the GATK jar file.
-* Download the `GenomeAnalysisTK.jar` package from [this link](https://software.broadinstitute.org/gatk/download/).
-* By default is set to CalliNGS-NF's locations: `/usr/local/bin/GenomeAnalysisTK.jar`.
-
-Example: 
-
-    $ nextflow run main.nf --gatk /home/bin/GenomeAnalysisTK.jar
+    $ nextflow run CRG-CNAG/CalliNGS-NF --blacklist /home/user/data/blacklisted_regions.bed
 
 
 #### `--results` 
@@ -115,7 +104,18 @@ Example:
 
 Example: 
 
-    $ nextflow run main.nf --results /home/user/my_results
+    $ nextflow run CRG-CNAG/CalliNGS-NF --results /home/user/my_results
+    
+
+#### `--gatk` 
+   
+* Specifies the location of the GATK jar file.
+* Download the `GenomeAnalysisTK.jar` package from [this link](https://software.broadinstitute.org/gatk/download/).
+* By default is set to CalliNGS-NF's locations: `/opt/broad/GenomeAnalysisTK.jar`.
+
+Example: 
+
+    $ nextflow run CRG-CNAG/CalliNGS-NF --gatk /opt/broad/GenomeAnalysisTK.jar
     
     
 ## Pipeline results
