@@ -427,27 +427,27 @@ process '6B_prepare_vcf_for_ase' {
  * 
  * The `bam_for_ASE_ch` emites tuples having the following structure, holding the final BAM/BAI files:
  *  
- *   ( replicate_id, file_bam, file_bai )
+ *   ( sample_id, file_bam, file_bai )
  * 
  * The `vcf_for_ASE` channel emits tuples having the following structure, holding the VCF file:
  *  
- *   ( sampleId, output.vcf ) 
+ *   ( sample_id, output.vcf ) 
  * 
  * The BAMs are grouped together and merged with VCFs having the same replicate id. Finally 
  * it creates a channel named `grouped_vcf_bam_bai_ch` emitting the following tuples: 
  *  
- *   ( replicate_id, file_vcf, List[file_bam], List[file_bai] )
+ *   ( sample_id, file_vcf, List[file_bam], List[file_bai] )
  */
 
 bam_for_ASE_ch
     .groupTuple()
     .phase(vcf_for_ASE)
     .map{ left, right -> 
-      def repId = left[0]
+      def sampleId = left[0]
       def bam = left[1]
       def bai = left[2]
       def vcf = right[1]
-      tuple(repId, vcf, bam, bai)  
+      tuple(sampleId, vcf, bam, bai)  
     }
     .set { grouped_vcf_bam_bai_ch }
 
