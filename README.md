@@ -48,6 +48,8 @@ where:
 * the second number **1** or **2** is the read pair in the paired-end samples;
 * *extension* is the read file name extension eg. `fq`, `fq.gz`, `fastq.gz`, etc. 
 
+example: `ENCSR000COQ1_2.fastq.gz`.
+
 ## Pipeline parameters
 
 #### `--reads` 
