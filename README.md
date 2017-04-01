@@ -122,13 +122,13 @@ Example:
     
 ## Pipeline results
 
-For each sample with `sampleID` the pipeline creates a number of output files inside a current working folder.
-Here is a brief description of output files:
-* `sampleID/final.vcf`,  somatic SNVs called from the RNAseq data
-* `sampleID/diff.sites_in_files`, comparison of the SNVs from RNAseq data with the set of known variants
-* `sampleID/known_snps.vcf`, SNVs that are common between RNAseq calls and known variants
-* `sampleID/ASE.tsv`, allele counts at a positions of SNVs (only for common SNVs)
-* `sampleID/AF.histogram.pdf`, a histogram plot for allele frequency (only for common SNVs)
+For each sample the pipeline creates a folder named `sampleID` inside the directory specified by using the `--results` command line option (default: `results`).
+Here is a brief description of output files created for each sample:
+* `final.vcf`:  somatic SNVs called from the RNAseq data;
+* `diff.sites_in_files`: comparison of the SNVs from RNAseq data with the set of known variants;
+* `known_snps.vcf`: SNVs that are common between RNAseq calls and known variants;
+* `ASE.tsv`: allele counts at a positions of SNVs (only for common SNVs);
+* `AF.histogram.pdf`: a histogram plot for allele frequency (only for common SNVs).
 
 
 ## Schematic Outline
