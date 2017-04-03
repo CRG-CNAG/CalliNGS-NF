@@ -433,7 +433,7 @@ process '6B_prepare_vcf_for_ase' {
  *  
  *   ( sample_id, output.vcf ) 
  * 
- * The BAMs are grouped together and merged with VCFs having the same replicate id. Finally 
+ * The BAMs are grouped together and merged with VCFs having the same sample id. Finally 
  * it creates a channel named `grouped_vcf_bam_bai_ch` emitting the following tuples: 
  *  
  *   ( sample_id, file_vcf, List[file_bam], List[file_bai] )
