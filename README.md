@@ -139,7 +139,7 @@ file | description
 
 ## Requirements 
 
-* Nextflow 0.24.x (or higher)
+* [Nextflow](https://www.nextflow.io) 0.24.x (or higher)
 * Java 7/8
 * [Docker](https://www.docker.com/) 1.10 (or higher) or [Singularity](http://singularity.lbl.gov) engine
 * [GATK](https://software.broadinstitute.org/gatk/) 3.7 
