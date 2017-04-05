@@ -115,9 +115,9 @@ process '1C_prepare_star_genome_index' {
   tag "$genome.baseName"
 
   input:
-      file(genome) from genome_file
+      file genome from genome_file
   output:
-      file(genome_dir) into genome_dir_ch
+      file "genome_dir" into genome_dir_ch
 
   script:
   """
@@ -139,8 +139,8 @@ process '1D_prepare_vcf_file' {
   tag "$variantsFile.baseName"
 
   input: 
-      file(variantsFile) from variants_file
-      file(blacklisted) from blacklist_file
+      file variantsFile from variants_file
+      file blacklisted from blacklist_file
 
   output:
       set file("${variantsFile.baseName}.filtered.recode.vcf.gz"), file("${variantsFile.baseName}.filtered.recode.vcf.gz.tbi") into prepared_vcf_ch
@@ -280,7 +280,8 @@ process '4_rnaseq_gatk_recalibrate' {
       set file(variants_file), file(variants_file_index) from prepared_vcf_ch
 
   output:
-      set sampleId, file("${replicateId}.final.uniq.bam"), file("${replicateId}.final.uniq.bam.bai") into (final_output_ch, bam_for_ASE_ch)
+      set sampleId, file("${replicateId}.final.uniq.bam")  into final_output_ch
+      set sampleId, file("${replicateId}.final.uniq.bam"), file("${replicateId}.final.uniq.bam.bai") into bam_for_ASE_ch
   
   script: 
   sampleId = replicateId.replaceAll(/[12]$/,'')
@@ -336,7 +337,7 @@ process '5_rnaseq_call_variants' {
       file genome from genome_file
       file index from genome_index_ch
       file dict from genome_dict_ch
-      set sampleId, file(bam), file(index) from final_output_ch.groupTuple()
+      set sampleId, file(bam) from final_output_ch.groupTuple()
   
   output: 
       set sampleId, file('final.vcf') into vcf_files
