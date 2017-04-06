@@ -1,7 +1,5 @@
-# NGS 2017 Post-Conference Workshop
-
-## CalliNGS-NF
-A Nextflow pipeline for basic Variant Calling Analysis with NGS RNA-Seq data
+# CalliNGS-NF
+A Nextflow pipeline for Variant Calling Analysis with NGS RNA-Seq data based on GATK Best Practices.
 
 [![nextflow](https://img.shields.io/badge/nextflow-%E2%89%A50.24.0-brightgreen.svg)](http://nextflow.io)
 [![CircleCI status](https://circleci.com/gh/CRG-CNAG/CalliNGS-NF.png?style=shield)](https://circleci.com/gh/CRG-CNAG/CalliNGS-NF/tree/master)
