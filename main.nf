@@ -41,17 +41,21 @@ params.genome     = "$baseDir/data/genome.fa"
 params.variants   = "$baseDir/data/known_variants.vcf.gz"
 params.blacklist  = "$baseDir/data/blacklist.bed" 
 params.reads      = "$baseDir/data/reads/rep1_{1,2}.fq.gz"
+params.bams       = "$baseDir/data/bams/rep*.bam"
 params.results    = "results"
 params.gatk       = '/usr/local/bin/GenomeAnalysisTK.jar'
+params.map        = true
 
 log.info "C A L L I N G S  -  N F    v 1.0" 
 log.info "================================"
 log.info "genome   : $params.genome"
 log.info "reads    : $params.reads"
+log.info "bams     : $params.bams"
 log.info "variants : $params.variants"
 log.info "blacklist: $params.blacklist"
 log.info "results  : $params.results" 
 log.info "gatk     : $params.gatk"
+log.info "map      : $params.map"
 log.info ""
 
 /*
@@ -62,9 +66,20 @@ GATK            = params.gatk
 genome_file     = file(params.genome)
 variants_file   = file(params.variants)
 blacklist_file  = file(params.blacklist)
-reads_ch        = Channel.fromFilePairs(params.reads)
+//bam_files       = file(params.bams)
 
-
+/*
+ * Create reads channel if --map=true, else create bam channel.
+ */ 
+if (params.map) {
+  reads_ch        = Channel.fromFilePairs(params.reads)
+}
+if (!params.map) {
+  Channel.fromPath (params.bams)
+    .map { it -> [ it.baseName, it, it+'.bai'] }
+    .set { aligned_bam_ch } 
+}
+     
 /**********
  * PART 1: Data preparation
  *
@@ -107,27 +122,30 @@ process '1B_prepare_genome_picard' {
 }
 
 
+
+
 /*
  * Process 1C: Create STAR genome index file.
  */
+if (params.map) {
+  process '1C_prepare_star_genome_index' {
+    tag "$genome.baseName"
 
-process '1C_prepare_star_genome_index' {
-  tag "$genome.baseName"
-
-  input:
+    input:
       file genome from genome_file
-  output:
+    output:
       file "genome_dir" into genome_dir_ch
 
-  script:
-  """
-  mkdir genome_dir
+    script:
+    """
+    mkdir genome_dir
 
-  STAR --runMode genomeGenerate \
-       --genomeDir genome_dir \
-       --genomeFastaFiles ${genome} \
-       --runThreadN ${task.cpus}
-  """
+    STAR --runMode genomeGenerate \
+         --genomeDir genome_dir \
+         --genomeFastaFiles ${genome} \
+         --runThreadN ${task.cpus}
+    """
+  }
 }
 
 
@@ -143,7 +161,9 @@ process '1D_prepare_vcf_file' {
       file blacklisted from blacklist_file
 
   output:
-      set file("${variantsFile.baseName}.filtered.recode.vcf.gz"), file("${variantsFile.baseName}.filtered.recode.vcf.gz.tbi") into prepared_vcf_ch
+      set file("${variantsFile.baseName}.filtered.recode.vcf.gz"), \
+          file("${variantsFile.baseName}.filtered.recode.vcf.gz.tbi") \
+          into prepared_vcf_ch
   
   script:  
   """
@@ -168,53 +188,59 @@ process '1D_prepare_vcf_file' {
  * Process 2: Align RNA-Seq reads to the genome with STAR
  */
 
-process '2_rnaseq_mapping_star' {
-  tag "$replicateId"
 
-  input: 
+if (params.map) {
+  process '2_rnaseq_mapping_star' {
+    tag "$replicateId"
+
+    input: 
       file genome from genome_file 
       file genomeDir from genome_dir_ch
       set replicateId, file(reads) from reads_ch 
 
-  output: 
-      set replicateId, file('Aligned.sortedByCoord.out.bam'), file('Aligned.sortedByCoord.out.bam.bai') into aligned_bam_ch
+    output: 
+      set replicateId, \
+          file('Aligned.sortedByCoord.out.bam'), \
+          file('Aligned.sortedByCoord.out.bam.bai') \
+          into aligned_bam_ch
 
-  script:    
-  """
-  # ngs-nf-dev Align reads to genome
-  STAR --genomeDir $genomeDir \
-       --readFilesIn $reads \
-       --runThreadN ${task.cpus} \
-       --readFilesCommand zcat \
-       --outFilterType BySJout \
-       --alignSJoverhangMin 8 \
-       --alignSJDBoverhangMin 1 \
-       --outFilterMismatchNmax 999
+    script:    
+    """
+    # ngs-nf-dev Align reads to genome
+    STAR --genomeDir $genomeDir \
+         --readFilesIn $reads \
+         --runThreadN ${task.cpus} \
+         --readFilesCommand zcat \
+         --outFilterType BySJout \
+         --alignSJoverhangMin 8 \
+         --alignSJDBoverhangMin 1 \
+         --outFilterMismatchNmax 999
     
-  # 2nd pass (improve alignmets using table of splice junctions and create a new index)  
-  mkdir genomeDir  
-  STAR --runMode genomeGenerate \
-       --genomeDir genomeDir \
-       --genomeFastaFiles $genome \
-       --sjdbFileChrStartEnd SJ.out.tab \
-       --sjdbOverhang 75 \
-       --runThreadN ${task.cpus}  
+    # 2nd pass (improve alignmets using table of splice junctions and create a new index)  
+    mkdir genomeDir  
+    STAR --runMode genomeGenerate \
+         --genomeDir genomeDir \
+         --genomeFastaFiles $genome \
+         --sjdbFileChrStartEnd SJ.out.tab \
+         --sjdbOverhang 75 \
+         --runThreadN ${task.cpus}  
     
-  # Final read alignments  
-  STAR --genomeDir genomeDir \
-       --readFilesIn $reads \
-       --runThreadN ${task.cpus} \
-       --readFilesCommand zcat \
-       --outFilterType BySJout \
-       --alignSJoverhangMin 8 \
-       --alignSJDBoverhangMin 1 \
-       --outFilterMismatchNmax 999 \
-       --outSAMtype BAM SortedByCoordinate \
-       --outSAMattrRGline ID:$replicateId LB:library PL:illumina PU:machine SM:GM12878
+    # Final read alignments  
+    STAR --genomeDir genomeDir \
+         --readFilesIn $reads \
+         --runThreadN ${task.cpus} \
+         --readFilesCommand zcat \
+         --outFilterType BySJout \
+         --alignSJoverhangMin 8 \
+         --alignSJDBoverhangMin 1 \
+         --outFilterMismatchNmax 999 \
+         --outSAMtype BAM SortedByCoordinate \
+         --outSAMattrRGline ID:$replicateId LB:library PL:illumina PU:machine SM:GM12878
 
-  # Index the BAM file
-  samtools index Aligned.sortedByCoord.out.bam
-  """
+    # Index the BAM file
+    samtools index Aligned.sortedByCoord.out.bam
+    """
+  }
 }
 
 /*
