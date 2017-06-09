@@ -41,6 +41,15 @@ RUN curl -fksSL https://github.com/vcftools/vcftools/releases/download/v0.1.14/v
 RUN curl -fksSL https://github.com/alexdobin/STAR/archive/2.5.2b.tar.gz | tar xz && \
     cp STAR-2.5.2b/bin/Linux_x86_64/* /usr/local/bin
 
-## Install R packages for ggplot2
+## install R packages for ggplot2
 RUN R -e 'install.packages( c("reshape2","optparse"), repos="http://cloud.r-project.org/");' && \
     apt-get update && apt-get install r-cran-ggplot2 -y -q
+
+## install python
+RUN apt-get install -y -q python 
+
+## install bedtools
+RUN curl -fksSL https://github.com/arq5x/bedtools2/releases/download/v2.26.0/bedtools-2.26.0.tar.gz | tar xz && \ 
+    cd bedtools2 && \
+    make && \
+    cp ./bin/* /usr/local/bin/.

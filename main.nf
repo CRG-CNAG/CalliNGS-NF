@@ -66,7 +66,6 @@ GATK            = params.gatk
 genome_file     = file(params.genome)
 variants_file   = file(params.variants)
 blacklist_file  = file(params.blacklist)
-//bam_files       = file(params.bams)
 
 /*
  * Create reads channel if --map=true, else create bam channel.
@@ -122,8 +121,6 @@ process '1B_prepare_genome_picard' {
 }
 
 
-
-
 /*
  * Process 1C: Create STAR genome index file.
  */
@@ -159,21 +156,62 @@ process '1D_prepare_vcf_file' {
   input: 
       file variantsFile from variants_file
       file blacklisted from blacklist_file
+      file genome from genome_file
 
   output:
-      set file("${variantsFile.baseName}.filtered.recode.vcf.gz"), \
-          file("${variantsFile.baseName}.filtered.recode.vcf.gz.tbi") \
+      set file("${variantsFile.baseName}.finalPrep.vcf"), \
+          file("${variantsFile.baseName}.finalPrep.vcf.tbi") \
           into prepared_vcf_ch
   
-  script:  
-  """
-  vcftools --gzvcf $variantsFile -c \
-           --exclude-bed ${blacklisted} \
-           --recode | bgzip -c \
-           > ${variantsFile.baseName}.filtered.recode.vcf.gz
+   shell:
+   '''
+   # Step 0
+   # Change R/N/Y/W/S/B characters
 
-  tabix ${variantsFile.baseName}.filtered.recode.vcf.gz
-  """
+   zcat !{variantsFile} | \
+       awk -F '\t' '$4!~/^[NRYWSB]/&&$5!~/^[NRYWSB]/||$1~/^\\#/' \
+       > !{variantsFile.baseName}.noRNY.vcf
+
+   # Step 4
+   # Remove those variants that have exactly the same position 
+   grep -v '#'  !{variantsFile.baseName}.noRNY.vcf \
+                |awk '{print $1" "$2}' \
+                | sort|uniq -c |awk '$1>1' \
+                |awk 'BEGIN{OFS="\t"}{print $2,$3,$3}' \
+                > problematic.sites.bed
+
+   bedtools intersect -header -v -a  !{variantsFile.baseName}.noRNY.vcf \
+            -b problematic.sites.bed > \
+            !{variantsFile.baseName}.dupsFiltered.vcf
+
+   # Step 1 
+   # Select only those variants that passed all filters
+    java -jar !{GATK} \
+         -T SelectVariants \
+         -R !{genome} \
+         -V !{variantsFile.baseName}.dupsFiltered.vcf \
+         -o !{variantsFile.baseName}.allFiltered.vcf.gz --excludeFiltered
+
+   # Step 2
+   # Select only Heterozygous variants
+    zcat !{variantsFile.baseName}.allFiltered.vcf.gz \
+         | grep -v '0|0\\|1|1' > \
+         !{variantsFile.baseName}.heterozygous.vcf
+    gzip !{variantsFile.baseName}.heterozygous.vcf
+
+   # Step 3 
+   # Remove the blacklisted regions from the variants file
+   bedtools intersect -header \
+            -v -a !{variantsFile.baseName}.heterozygous.vcf \
+            -b !{blacklisted} > \
+            !{variantsFile.baseName}.finalPrep.vcf
+
+   # Step 5
+   # Compress + index 
+   # NB: tabix is working only with bgzipped version of the files
+   bgzip !{variantsFile.baseName}.finalPrep.vcf
+   tabix !{variantsFile.baseName}.finalPrep.vcf
+   '''
 }
 
 /*
@@ -405,16 +443,25 @@ process '6A_post_process_vcf' {
   publishDir "$params.results/$sampleId" 
   
   input:
-      set sampleId, file('final.vcf') from vcf_files
-      set file('filtered.recode.vcf.gz'), file('filtered.recode.vcf.gz.tbi') from prepared_vcf_ch 
+      set sampleId, \
+          file('final.vcf') from vcf_files
+      set file('filtered.recode.vcf.gz'), \
+          file('filtered.recode.vcf.gz.tbi') from prepared_vcf_ch 
+
   output: 
-      set sampleId, file('final.vcf'), file('commonSNPs.diff.sites_in_files') into vcf_and_snps_ch
+      set sampleId, file('final.vcf'), \
+          file('commonSNPs.diff.sites_in_files') into vcf_and_snps_ch
   
   script:
   '''
-  grep -v '#' final.vcf | awk '$7~/PASS/' |perl -ne 'chomp($_); ($dp)=$_=~/DP\\=(\\d+)\\;/; if($dp>=8){print $_."\\n"};' > result.DP8.vcf
+  grep -v '#' final.vcf | awk '$7~/PASS/' |\
+      perl -ne 'chomp($_); ($dp)=$_=~/DP\\=(\\d+)\\;/; \
+      if($dp>=8){print $_."\\n"};' \
+      > result.DP8.vcf
   
-  vcftools --vcf result.DP8.vcf --gzdiff filtered.recode.vcf.gz  --diff-site --out commonSNPs
+  vcftools --vcf result.DP8.vcf \
+           --gzdiff filtered.recode.vcf.gz  \
+           --diff-site --out commonSNPs
   '''
 }
 
