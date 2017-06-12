@@ -157,10 +157,12 @@ process '1D_prepare_vcf_file' {
       file variantsFile from variants_file
       file blacklisted from blacklist_file
       file genome from genome_file
+      file genone_index from genome_index_ch
+      file genome_dict from genome_dict_ch
 
   output:
-      set file("${variantsFile.baseName}.finalPrep.vcf"), \
-          file("${variantsFile.baseName}.finalPrep.vcf.tbi") \
+      set file("${variantsFile.baseName}.finalPrep.vcf.gz"), \
+          file("${variantsFile.baseName}.finalPrep.vcf.gz.tbi") \
           into prepared_vcf_ch
   
    shell:
@@ -202,7 +204,7 @@ process '1D_prepare_vcf_file' {
    # Step 3 
    # Remove the blacklisted regions from the variants file
    bedtools intersect -header \
-            -v -a !{variantsFile.baseName}.heterozygous.vcf \
+            -v -a !{variantsFile.baseName}.heterozygous.vcf.gz \
             -b !{blacklisted} > \
             !{variantsFile.baseName}.finalPrep.vcf
 
@@ -210,7 +212,7 @@ process '1D_prepare_vcf_file' {
    # Compress + index 
    # NB: tabix is working only with bgzipped version of the files
    bgzip !{variantsFile.baseName}.finalPrep.vcf
-   tabix !{variantsFile.baseName}.finalPrep.vcf
+   tabix !{variantsFile.baseName}.finalPrep.vcf.gz
    '''
 }
 
