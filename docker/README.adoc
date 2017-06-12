@@ -7,9 +7,10 @@ The pipline needs the following tools:
 - https://github.com/alexdobin/STAR[STAR] - RNA mapper
 - http://www.htslib.org/[samtools]
 - http://cran.r-project.org[R]
+- http://bedtools.readthedocs.io/en/latest/[bedtools]
 
 A Docker container with all tools except the Genome Analysis Toolkit can be built from the `Dockerfile` present in this folder.
 
-A prebuilt Docker container is available at the Docker hub as `cbcrg/ngs2017ws-nf`.
+A prebuilt Docker container is available at the Docker hub as `cbcrg/callings-nf`.
 
 For the Genome Analysis Toolkit we use `biodckrdev/gatk` available at the Docker hub.

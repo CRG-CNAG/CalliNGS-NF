@@ -12,7 +12,7 @@ Install Nextflow by using the following command:
     
 Download the Docker image with this command (optional) : 
 
-    docker pull cbcrg/callings-nf@sha256:b65a7d721b9dd2da07d6bdd7f868b04039860f14fa514add975c59e68614c310
+    docker pull cbcrg/callings-nf@sha256:26e79043e9756e2e4c8e3fb71731eaac9de362b165f4d9f078d86d9afa88414b
     
 Note: the Docker image contains all the required dependencies except GATK which 
 cannot be included due to license restrictions. 
@@ -33,7 +33,12 @@ In addition to the GATK best practics, the pipeline includes steps to compare ob
 ## Input files
 
 The CalliNGS-NF pipeline needs as the input following files:
+Either:
 * RNAseq reads, `*.fastq`
+or
+* BAM files, `*.bam`
+
+plus:
 * Genome assembly, `*.fa`
 * Known variants, `*.vcf`
 * Blacklisted regions of the genome, `*.bed`
@@ -61,6 +66,18 @@ example: `ENCSR000COQ1_2.fastq.gz`.
 Example: 
 
     $ nextflow run CRG-CNAG/CalliNGS-NF --reads '/home/dataset/*_{1,2}.fq.gz'
+
+
+#### `--bams`
+
+* An alternative to providing reads files is to provide bam files. 
+* When run in this mode, the pipeline is able to skip the the mapping stage. 
+* By default it is set to the CalliNGS-NF's location: `$baseDir/data/bams/rep*.bam`
+* To run in this mode, the `--map=false` parameter must be set.
+
+Example: 
+
+    $ nextflow run CRG-CNAG/CalliNGS-NF --bams '/home/dataset/bams/rep*.bam' --map=false
 
 
 #### `--genome`
