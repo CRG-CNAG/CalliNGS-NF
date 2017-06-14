@@ -10,5 +10,7 @@ test:
     - docker pull 885800555707.dkr.ecr.us-east-1.amazonaws.com/cbcrg/callings-with-gatk:latest
     - curl -fsSL get.nextflow.io | bash 
   override:
-    - NXF_VER=0.24.0-SNAPSHOT ./nextflow run . -profile circleci
+    - ./nextflow run . -profile circleci
+    - bash -x validate-ci.sh
+    - ./nextflow run . -profile circleci --bams 'data/bams/rep*.bam'
     - bash -x validate-ci.sh
