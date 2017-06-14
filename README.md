@@ -73,11 +73,10 @@ Example:
 * An alternative to providing reads files is to provide bam files. 
 * When run in this mode, the pipeline is able to skip the the mapping stage. 
 * By default it is set to the CalliNGS-NF's location: `$baseDir/data/bams/rep*.bam`
-* To run in this mode, the `--map=false` parameter must be set.
 
 Example: 
 
-    $ nextflow run CRG-CNAG/CalliNGS-NF --bams '/home/dataset/bams/rep*.bam' --map=false
+    $ nextflow run CRG-CNAG/CalliNGS-NF --bams '/home/dataset/bams/rep*.bam' 
 
 
 #### `--genome`

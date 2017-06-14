@@ -41,10 +41,9 @@ params.genome     = "$baseDir/data/genome.fa"
 params.variants   = "$baseDir/data/known_variants.vcf.gz"
 params.blacklist  = "$baseDir/data/blacklist.bed" 
 params.reads      = "$baseDir/data/reads/rep1_{1,2}.fq.gz"
-params.bams       = "$baseDir/data/bams/rep*.bam"
 params.results    = "results"
 params.gatk       = '/usr/local/bin/GenomeAnalysisTK.jar'
-params.map        = true
+params.bams       = ''
 
 log.info "C A L L I N G S  -  N F    v 1.0" 
 log.info "================================"
@@ -55,7 +54,6 @@ log.info "variants : $params.variants"
 log.info "blacklist: $params.blacklist"
 log.info "results  : $params.results" 
 log.info "gatk     : $params.gatk"
-log.info "map      : $params.map"
 log.info ""
 
 /*
@@ -70,14 +68,19 @@ blacklist_file  = file(params.blacklist)
 /*
  * Create reads channel if --map=true, else create bam channel.
  */ 
-if (params.map) {
-  reads_ch        = Channel.fromFilePairs(params.reads)
-}
-if (!params.map) {
-  Channel.fromPath (params.bams)
-    .map { it -> [ it.baseName, it, it+'.bai'] }
-    .set { aligned_bam_ch } 
-}
+if (!params.bams) 
+  Channel
+        .fromFilePairs(params.reads)
+        .ifEmpty { error "Cannot find any reads matching: ${params.reads}" }
+        .set { reads_ch }
+
+else 
+  Channel
+        .fromPath(params.bams)
+        .ifEmpty { error "Cannot find any BAM files matching: ${params.bams}" }
+        .map { it -> [ it.baseName, it, it+'.bai'] }
+        .set { aligned_bam_ch } 
+
      
 /**********
  * PART 1: Data preparation
@@ -124,7 +127,7 @@ process '1B_prepare_genome_picard' {
 /*
  * Process 1C: Create STAR genome index file.
  */
-if (params.map) {
+if (!params.bams) {
   process '1C_prepare_star_genome_index' {
     tag "$genome.baseName"
 
@@ -229,7 +232,7 @@ process '1D_prepare_vcf_file' {
  */
 
 
-if (params.map) {
+if (!params.bams) {
   process '2_rnaseq_mapping_star' {
     tag "$replicateId"
 
