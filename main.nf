@@ -280,8 +280,7 @@ process '4_rnaseq_gatk_recalibrate' {
       set file(variants_file), file(variants_file_index) from prepared_vcf_ch
 
   output:
-      set sampleId, file("${replicateId}.final.uniq.bam")  into final_output_ch
-      set sampleId, file("${replicateId}.final.uniq.bam"), file("${replicateId}.final.uniq.bam.bai") into bam_for_ASE_ch
+      set sampleId, file("${replicateId}.final.uniq.bam"), file("${replicateId}.final.uniq.bam.bai") into (final_output_ch, bam_for_ASE_ch)
   
   script: 
   sampleId = replicateId.replaceAll(/[12]$/,'')
@@ -337,13 +336,15 @@ process '5_rnaseq_call_variants' {
       file genome from genome_file
       file index from genome_index_ch
       file dict from genome_dict_ch
-      set sampleId, file(bam) from final_output_ch.groupTuple()
+      set sampleId, file(bam), file(bai) from final_output_ch.groupTuple()
   
   output: 
       set sampleId, file('final.vcf') into vcf_files
 
   script:
   """
+  # fix absolute path in dict file
+  sed -i 's@UR:file:.*${genome}@UR:file:${genome}@g' $dict
   echo "${bam.join('\n')}" > bam.list
   
   # Variant calling
