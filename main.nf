@@ -43,6 +43,7 @@ params.blacklist  = "$baseDir/data/blacklist.bed"
 params.reads      = "$baseDir/data/reads/rep1_{1,2}.fq.gz"
 params.results    = "results"
 params.gatk       = '/usr/local/bin/GenomeAnalysisTK.jar'
+params.gatk_launch = "java -jar $params.gatk" 
 
 log.info "C A L L I N G S  -  N F    v 1.0" 
 log.info "================================"
@@ -58,7 +59,7 @@ log.info ""
  *  Parse the input parameters
  */
 
-GATK            = params.gatk
+GATK            = params.gatk_launch
 genome_file     = file(params.genome)
 variants_file   = file(params.variants)
 blacklist_file  = file(params.blacklist)
@@ -246,13 +247,13 @@ process '3_rnaseq_gatk_splitNcigar' {
   script:
   """
   # SplitNCigarReads and reassign mapping qualities
-  java -jar $GATK -T SplitNCigarReads \
-                  -R $genome -I $bam \
-                  -o split.bam \
-                  -rf ReassignOneMappingQuality \
-                  -RMQF 255 -RMQT 60 \
-                  -U ALLOW_N_CIGAR_READS \
-                  --fix_misencoded_quality_scores
+  $GATK -T SplitNCigarReads \
+          -R $genome -I $bam \
+          -o split.bam \
+          -rf ReassignOneMappingQuality \
+          -RMQF 255 -RMQT 60 \
+          -U ALLOW_N_CIGAR_READS \
+          --fix_misencoded_quality_scores
   """
 }
 
@@ -286,23 +287,23 @@ process '4_rnaseq_gatk_recalibrate' {
   sampleId = replicateId.replaceAll(/[12]$/,'')
   """
   # Indel Realignment and Base Recalibration
-  java -jar $GATK -T BaseRecalibrator \
-                  --default_platform illumina \
-                  -cov ReadGroupCovariate \
-                  -cov QualityScoreCovariate \
-                  -cov CycleCovariate \
-                  -knownSites ${variants_file} \
-                  -cov ContextCovariate \
-                  -R ${genome} -I ${bam} \
-                  --downsampling_type NONE \
-                  -nct ${task.cpus} \
-                  -o final.rnaseq.grp 
+  $GATK -T BaseRecalibrator \
+          --default_platform illumina \
+          -cov ReadGroupCovariate \
+          -cov QualityScoreCovariate \
+          -cov CycleCovariate \
+          -knownSites ${variants_file} \
+          -cov ContextCovariate \
+          -R ${genome} -I ${bam} \
+          --downsampling_type NONE \
+          -nct ${task.cpus} \
+          -o final.rnaseq.grp 
 
-  java -jar $GATK -T PrintReads \
-                  -R ${genome} -I ${bam} \
-                  -BQSR final.rnaseq.grp \
-                  -nct ${task.cpus} \
-                  -o final.bam
+  $GATK -T PrintReads \
+          -R ${genome} -I ${bam} \
+          -BQSR final.rnaseq.grp \
+          -nct ${task.cpus} \
+          -o final.bam
 
   # Select only unique alignments, no multimaps
   (samtools view -H final.bam; samtools view final.bam| grep -w 'NH:i:1') \
@@ -348,19 +349,19 @@ process '5_rnaseq_call_variants' {
   echo "${bam.join('\n')}" > bam.list
   
   # Variant calling
-  java -jar $GATK -T HaplotypeCaller \
-                  -R $genome -I bam.list \
-                  -dontUseSoftClippedBases \
-                  -stand_call_conf 20.0 \
-                  -o output.gatk.vcf.gz
+  $GATK -T HaplotypeCaller \
+          -R $genome -I bam.list \
+          -dontUseSoftClippedBases \
+          -stand_call_conf 20.0 \
+          -o output.gatk.vcf.gz
 
   # Variant filtering
-  java -jar $GATK -T VariantFiltration \
-                  -R $genome -V output.gatk.vcf.gz \
-                  -window 35 -cluster 3 \
-                  -filterName FS -filter "FS > 30.0" \
-                  -filterName QD -filter "QD < 2.0" \
-                  -o final.vcf
+  $GATK -T VariantFiltration \
+          -R $genome -V output.gatk.vcf.gz \
+          -window 35 -cluster 3 \
+          -filterName FS -filter "FS > 30.0" \
+          -filterName QD -filter "QD < 2.0" \
+          -o final.vcf
   """
 }
 
@@ -478,11 +479,11 @@ process '6C_ASE_knownSNPs' {
   """
   echo "${bam.join('\n')}" > bam.list
     
-  java -jar $GATK -R ${genome} \
-                  -T ASEReadCounter \
-                  -o ASE.tsv \
-                  -I bam.list \
-                  -sites ${vcf}
+  $GATK -R ${genome} \
+          -T ASEReadCounter \
+          -o ASE.tsv \
+          -I bam.list \
+          -sites ${vcf}
   """
 }
 
