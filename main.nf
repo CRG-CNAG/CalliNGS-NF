@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Centre for Genomic Regulation (CRG).
+ * Copyright (c) 2017-2018, Centre for Genomic Regulation (CRG).
  *
  *   This file is part of 'CalliNGS-NF': 
  *   A Nextflow pipeline for Variant Calling with NGS data
@@ -45,15 +45,16 @@ params.results    = "results"
 params.gatk       = '/usr/local/bin/GenomeAnalysisTK.jar'
 params.gatk_launch = "java -jar $params.gatk" 
 
-log.info "C A L L I N G S  -  N F    v 1.0" 
-log.info "================================"
-log.info "genome   : $params.genome"
-log.info "reads    : $params.reads"
-log.info "variants : $params.variants"
-log.info "blacklist: $params.blacklist"
-log.info "results  : $params.results" 
-log.info "gatk     : $params.gatk"
-log.info ""
+log.info """\
+C A L L I N G S  -  N F    v 1.0 
+================================
+genome   : $params.genome
+reads    : $params.reads
+variants : $params.variants
+blacklist: $params.blacklist
+results  : $params.results
+gatk     : $params.gatk
+"""
 
 /*
  *  Parse the input parameters
