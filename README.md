@@ -8,7 +8,7 @@ A Nextflow pipeline for Variant Calling Analysis with NGS RNA-Seq data based on 
 
 Install Nextflow by using the following command: 
 
-    curl get.nextflow.io | bash 
+    curl -s https://get.nextflow.io | bash 
     
 Download the Docker image with this command (optional) : 
 
