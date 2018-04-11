@@ -17,7 +17,7 @@ Download the Docker image with this command (optional) :
 Note: the Docker image contains all the required dependencies except GATK which 
 cannot be included due to license restrictions. 
 
-Download the `GenomeAnalysisTK.jar` package from [this link](https://software.broadinstitute.org/gatk/download/).    
+Download the `GenomeAnalysisTK.jar` (version 3.7) package from [this link](https://software.broadinstitute.org/gatk/download/archive).    
 
 Launch the pipeline execution with the following command: 
 
