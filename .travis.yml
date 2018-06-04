@@ -1,0 +1,19 @@
+sudo: required
+jdk:
+- openjdk8
+services:
+- docker
+branches:
+  only:
+  - master  
+install:
+- sudo apt-get -qq update
+- sudo apt-get -qq -y install graphviz realpath
+- sudo pip install awscli
+before_script:
+- $(aws ecr get-login --region us-east-1 --no-include-email)
+- docker pull 885800555707.dkr.ecr.us-east-1.amazonaws.com/cbcrg/callings-with-gatk:latest
+- curl -fsSL get.nextflow.io | bash 
+script:
+- ./nextflow run . -profile circleci
+- bash -x validate-ci.sh
