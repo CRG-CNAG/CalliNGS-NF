@@ -15,5 +15,5 @@ before_script:
 - docker pull 885800555707.dkr.ecr.us-east-1.amazonaws.com/cbcrg/callings-with-gatk:latest
 - curl -fsSL get.nextflow.io | bash 
 script:
-- ./nextflow run . -profile circleci
+- ./nextflow run . -profile travis
 - bash -x validate-ci.sh
