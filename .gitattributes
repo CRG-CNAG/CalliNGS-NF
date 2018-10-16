@@ -1,0 +1,3 @@
+scripts/* linguist-detectable=false
+validate-ci.sh linguist-detectable=false
+docker/* linguist-detectable=false
