@@ -66,7 +66,7 @@ reads_ch        = Channel.fromFilePairs(params.reads)
 
 process '1A_prepare_genome_samtools' { 
   tag "$genome.baseName"
-  
+ 
   input: 
       file genome from genome_file 
  
@@ -86,6 +86,7 @@ process '1A_prepare_genome_samtools' {
 
 process '1B_prepare_genome_picard' {
   tag "$genome.baseName"
+  label 'mem_xlarge'
 
   input:
       file genome from genome_file
@@ -226,6 +227,7 @@ process '2_rnaseq_mapping_star' {
 
 process '3_rnaseq_gatk_splitNcigar' {
   tag "$replicateId"
+  label 'mem_large'
   
   input: 
       file genome from genome_file 
@@ -264,7 +266,8 @@ process '3_rnaseq_gatk_splitNcigar' {
 
 process '4_rnaseq_gatk_recalibrate' {
   tag "$replicateId"
-    
+  label 'mem_large'    
+
   input: 
       file genome from genome_file 
       file index from genome_index_ch
@@ -324,6 +327,7 @@ process '4_rnaseq_gatk_recalibrate' {
 
 process '5_rnaseq_call_variants' {
   tag "$sampleId"
+  label 'mem_large'
 
   input:
       file genome from genome_file
@@ -371,7 +375,7 @@ process '5_rnaseq_call_variants' {
 process '6A_post_process_vcf' {
   tag "$sampleId"
   publishDir "$params.results/$sampleId" 
-  
+
   input:
       set sampleId, file('final.vcf') from vcf_files
       set file('filtered.recode.vcf.gz'), file('filtered.recode.vcf.gz.tbi') from prepared_vcf_ch 
@@ -393,7 +397,7 @@ process '6A_post_process_vcf' {
 process '6B_prepare_vcf_for_ase' {
   tag "$sampleId"
   publishDir "$params.results/$sampleId" 
-  
+
   input: 
       set sampleId, file('final.vcf'), file('commonSNPs.diff.sites_in_files') from vcf_and_snps_ch
   output: 
@@ -457,7 +461,8 @@ bam_for_ASE_ch
 process '6C_ASE_knownSNPs' {
   tag "$sampleId"
   publishDir "$params.results/$sampleId" 
-  
+  label 'mem_large'  
+
   input:
       file genome from genome_file 
       file index from genome_index_ch
