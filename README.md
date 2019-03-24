@@ -23,6 +23,8 @@ Launch the pipeline execution with the following command:
 
     nextflow run CRG-CNAG/CalliNGS-NF --gatk </path/to/GenomeAnalysisTK.jar>
 
+NOTE: GATK 4.x is also available.  For instuctions on how to use, see the bottom of this document.
+
 
 ## Pipeline Description
 
@@ -161,3 +163,11 @@ CalliNGS-NF uses the following software components and tools:
 * Awk
 * Perl
 * Grep
+
+---
+## Using GATK 4.x w/Nextflow
+
+1. Download GATK 4.x jar file - [here](https://github.com/broadinstitute/gatk/releases/download/4.1.0.0/gatk-4.1.0.0.zip)
+2. READ Exhibit C in the LICENSE file mentioning third-party tool licenses to understand the licensing for GATK 4.x - [here](https://software.broadinstitute.org/gatk/download/licensing.php)
+3. 
+
