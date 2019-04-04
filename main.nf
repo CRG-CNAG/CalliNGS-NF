@@ -38,11 +38,11 @@ params.gatk       = '/usr/local/bin/GenomeAnalysisTK.jar'
 /* 
  * Import modules 
  */
-
-require 'modules.nf', params:[gatk: params.gatk, results: params.results]
+nextflow.preview.dsl = 2
+include 'modules.nf' params(gatk: params.gatk, results: params.results)
 
 log.info """\
-C A L L I N G S  -  N F    v 1.0 
+C A L L I N G S  -  N F    v 2.0 
 ================================
 genome   : $params.genome
 reads    : $params.reads
@@ -61,120 +61,51 @@ variants_file   = file(params.variants)
 blacklist_file  = file(params.blacklist)
 reads_ch        = Channel.fromFilePairs(params.reads)
 
+workflow {
 
-/**********
- * PART 1: Data preparation
- *
- * Process 1A: Create a FASTA genome index (.fai) with samtools for GATK
- */
+      PREPARE_GENOME_SAMTOOLS(genome_file)
 
-genome_index_ch = '1A_prepare_genome_samtools'(genome_file)
+      PREPARE_GENOME_PICARD(genome_file)
 
-/*
- * Process 1B: Create a FASTA genome sequence dictionary with Picard for GATK
- */
+      PREPARE_STAR_GENOME_INDEX(genome_file)
 
-genome_dict_ch = '1B_prepare_genome_picard'(genome_file)
+      PREPARE_VCF_FILE(variants_file, blacklist_file)
 
+      RNASEQ_MAPPING_STAR( 
+            genome_file, 
+            PREPARE_STAR_GENOME_INDEX.output, 
+            reads_ch)
 
-/*
- * Process 1C: Create STAR genome index file.
- */
+      RNASEQ_GATK_SPLITNCIGAR(
+            genome_file, 
+            PREPARE_GENOME_SAMTOOLS.output, 
+            PREPARE_GENOME_PICARD.output, 
+            RNASEQ_MAPPING_STAR.output)
 
-genome_dir_ch = '1C_prepare_star_genome_index'(genome_file)
+      RNASEQ_GATK_RECALIBRATE(
+                  genome_file, PREPARE_GENOME_SAMTOOLS.output, 
+                  PREPARE_GENOME_PICARD.output, 
+                  RNASEQ_GATK_SPLITNCIGAR.output, 
+                  PREPARE_VCF_FILE.output)
 
+      RNASEQ_CALL_VARIANTS( 
+            genome_file, 
+            PREPARE_GENOME_SAMTOOLS.output, 
+            PREPARE_GENOME_PICARD.output, 
+            RNASEQ_GATK_RECALIBRATE.output.groupTuple())
 
-/*
- * Process 1D: Create a file containing the filtered and recoded set of variants
- */
+      POST_PROCESS_VCF( 
+            RNASEQ_CALL_VARIANTS.output, 
+            PREPARE_VCF_FILE.output )
 
-prepared_vcf_ch = '1D_prepare_vcf_file'(variants_file, blacklist_file)
+      PREPARE_VCF_FOR_ASE( POST_PROCESS_VCF.output )
 
+      ASE_KNOWNSNPS(
+            genome_file, 
+            PREPARE_GENOME_SAMTOOLS.output, 
+            PREPARE_GENOME_PICARD.output, 
+            group_per_sample(   
+                  RNASEQ_GATK_RECALIBRATE.output, 
+                  PREPARE_VCF_FOR_ASE.output.first) )
 
-
-
-/**********
- *
- * Process 2: Align RNA-Seq reads to the genome with STAR
- */
-
-aligned_bam_ch = '2_rnaseq_mapping_star'( genome_file, genome_dir_ch, reads_ch)
-
-
-
-/**********
- *
- * Process 3: Split reads that contain Ns in their CIGAR string.
- *            Creates k+1 new reads (where k is the number of N cigar elements) 
- *            that correspond to the segments of the original read beside/between 
- *            the splicing events represented by the Ns in the original CIGAR.
- */
-
-splitted_bam_ch = '3_rnaseq_gatk_splitNcigar'(genome_file, genome_index_ch, genome_dict_ch, aligned_bam_ch)
-
-
-/***********
- *
- * Process 4: Base recalibrate to detect systematic errors in base quality scores, 
- *            select unique alignments and index
- *             
- */
-
-'4_rnaseq_gatk_recalibrate'(
-            genome_file, genome_index_ch, 
-            genome_dict_ch, 
-            splitted_bam_ch, 
-            prepared_vcf_ch)
-    . into { final_output_ch; bam_for_ASE_ch }
-
-
-/***********
- * PART 5: GATK Variant Calling
- *
- * Process 5: Call variants with GATK HaplotypeCaller.
- *            Calls SNPs and indels simultaneously via local de-novo assembly of 
- *            haplotypes in an active region.
- *            Filter called variants with GATK VariantFiltration.    
- */
-
-
-vcf_files = '5_rnaseq_call_variants'( 
-              genome_file, 
-              genome_index_ch, 
-              genome_dict_ch, 
-              final_output_ch.groupTuple())
-
-
-
-/***********
- * PART 6: Post-process variants file and prepare for Allele-Specific Expression and RNA Editing Analysis
- *
- * Process 6A: Post-process the VCF result  
- */
-
-vcf_and_snps_ch = '6A_post_process_vcf'( vcf_files, prepared_vcf_ch )
-
-/* 
- * Process 6B: Prepare variants file for allele specific expression (ASE) analysis
- */
-
-(vcf_for_ASE, gghist_pdfs) = '6B_prepare_vcf_for_ase'( vcf_and_snps_ch )
-
-
-/* 
- * Process 6C: Allele-Specific Expression analysis with GATK ASEReadCounter.
- *             Calculates allele counts at a set of positions after applying 
- *             filters that are tuned for enabling allele-specific expression 
- *             (ASE) analysis
- */
-
-'6C_ASE_knownSNPs'(
-      genome_file, 
-      genome_index_ch, 
-      genome_dict_ch, 
-      group_per_sample(bam_for_ASE_ch, vcf_for_ASE) )
-
-/*
- *  END OF PART 6
- ******/
-
+}

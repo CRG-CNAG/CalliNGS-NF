@@ -4,8 +4,14 @@ params.results    = "results"
 
 GATK = params.gatk_launch
 
+/**********
+ * PART 1: Data preparation
+ *
+ * Process 1A: Create a FASTA genome index (.fai) with samtools for GATK
+ */
 
-process '1A_prepare_genome_samtools' { 
+
+process PREPARE_GENOME_SAMTOOLS { 
   tag "$genome.baseName"
  
   input: 
@@ -20,7 +26,11 @@ process '1A_prepare_genome_samtools' {
   """
 }
 
-process '1B_prepare_genome_picard' {
+/*
+ * Process 1B: Create a FASTA genome sequence dictionary with Picard for GATK
+ */
+
+process PREPARE_GENOME_PICARD {
   tag "$genome.baseName"
   label 'mem_xlarge'
 
@@ -36,7 +46,11 @@ process '1B_prepare_genome_picard' {
   """
 }
 
-process '1C_prepare_star_genome_index' {
+/*
+ * Process 1C: Create STAR genome index file.
+ */
+
+process PREPARE_STAR_GENOME_INDEX {
   tag "$genome.baseName"
 
   input:
@@ -55,7 +69,11 @@ process '1C_prepare_star_genome_index' {
   """
 }
 
-process '1D_prepare_vcf_file' {
+/*
+ * Process 1D: Create a file containing the filtered and recoded set of variants
+ */
+
+process PREPARE_VCF_FILE {
   tag "$variantsFile.baseName"
 
   input: 
@@ -77,8 +95,12 @@ process '1D_prepare_vcf_file' {
   """
 }
 
+/**********
+ *
+ * Process 2: Align RNA-Seq reads to the genome with STAR
+ */
 
-process '2_rnaseq_mapping_star' {
+process RNASEQ_MAPPING_STAR {
   tag "$replicateId"
 
   input: 
@@ -129,8 +151,15 @@ process '2_rnaseq_mapping_star' {
   """
 }
 
+/**********
+ *
+ * Process 3: Split reads that contain Ns in their CIGAR string.
+ *            Creates k+1 new reads (where k is the number of N cigar elements) 
+ *            that correspond to the segments of the original read beside/between 
+ *            the splicing events represented by the Ns in the original CIGAR.
+ */
 
-process '3_rnaseq_gatk_splitNcigar' {
+process RNASEQ_GATK_SPLITNCIGAR {
   tag "$replicateId"
   label 'mem_large'
   
@@ -158,7 +187,14 @@ process '3_rnaseq_gatk_splitNcigar' {
   """
 }
 
-process '4_rnaseq_gatk_recalibrate' {
+/***********
+ *
+ * Process 4: Base recalibrate to detect systematic errors in base quality scores, 
+ *            select unique alignments and index
+ *             
+ */
+
+process RNASEQ_GATK_RECALIBRATE {
   tag "$replicateId"
   label 'mem_large'    
 
@@ -205,8 +241,16 @@ process '4_rnaseq_gatk_recalibrate' {
   """
 }
 
+/***********
+ * PART 5: GATK Variant Calling
+ *
+ * Process 5: Call variants with GATK HaplotypeCaller.
+ *            Calls SNPs and indels simultaneously via local de-novo assembly of 
+ *            haplotypes in an active region.
+ *            Filter called variants with GATK VariantFiltration.    
+ */
 
-process '5_rnaseq_call_variants' {
+process RNASEQ_CALL_VARIANTS {
   tag "$sampleId"
   label 'mem_large'
 
@@ -242,7 +286,13 @@ process '5_rnaseq_call_variants' {
   """
 }
 
-process '6A_post_process_vcf' {
+/***********
+ * PART 6: Post-process variants file and prepare for Allele-Specific Expression and RNA Editing Analysis
+ *
+ * Process 6A: Post-process the VCF result  
+ */
+
+process POST_PROCESS_VCF {
   tag "$sampleId"
   publishDir "$params.results/$sampleId" 
 
@@ -262,7 +312,11 @@ process '6A_post_process_vcf' {
   '''
 }
 
-process '6B_prepare_vcf_for_ase' {
+/* 
+ * Process 6B: Prepare variants file for allele specific expression (ASE) analysis
+ */
+
+process PREPARE_VCF_FOR_ASE {
   tag "$sampleId"
   publishDir "$params.results/$sampleId" 
 
@@ -288,8 +342,14 @@ process '6B_prepare_vcf_for_ase' {
   '''
 }
 
-
-process '6C_ASE_knownSNPs' {
+/* 
+ * Process 6C: Allele-Specific Expression analysis with GATK ASEReadCounter.
+ *             Calculates allele counts at a set of positions after applying 
+ *             filters that are tuned for enabling allele-specific expression 
+ *             (ASE) analysis
+ */
+ 
+process ASE_KNOWNSNPS {
   tag "$sampleId"
   publishDir "$params.results/$sampleId" 
   label 'mem_large'  
