@@ -5,14 +5,14 @@ services:
 - docker
 branches:
   only:
-  - master  
+  - master
+  - gatk4
 install:
 - sudo apt-get -qq update
 - sudo apt-get -qq -y install graphviz realpath
 - sudo pip install awscli
 before_script:
-- $(aws ecr get-login --region us-east-1 --no-include-email)
-- docker pull 885800555707.dkr.ecr.us-east-1.amazonaws.com/cbcrg/callings-with-gatk:latest
+- docker pull cbcrg/callings-nf:gatk4
 - curl -fsSL get.nextflow.io | bash 
 script:
 - ./nextflow run . -profile travis
