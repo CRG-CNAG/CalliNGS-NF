@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2018, Centre for Genomic Regulation (CRG).
+ * Copyright (c) 2017-2019, Centre for Genomic Regulation (CRG).
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,6 +21,7 @@
  * Emilio Palumbo 
  * Paolo Di Tommaso
  * Evan Floden 
+ * Luca Cozzuto
  */
 
 
@@ -246,10 +247,10 @@ process '3_rnaseq_gatk_splitNcigar' {
   """
   # SplitNCigarReads and reassign mapping qualities
   $GATK SplitNCigarReads \
-  -R genome.fa \
-  -I $bam \
-  --refactor-cigar-string \
-  -O split.bam
+            -R $genome \
+            -I $bam \
+            --refactor-cigar-string \
+            -O split.bam
   """
 }
 
@@ -338,12 +339,12 @@ process '5_rnaseq_call_variants' {
   
   # Variant calling
   $GATK HaplotypeCaller \
-  --native-pair-hmm-threads ${task.cpus} \
-  --reference ${genome} \
-  --output output.gatk.vcf.gz \
-  ${bam_params} \
-  --standard-min-confidence-threshold-for-calling 20.0 \
-  --dont-use-soft-clipped-bases 
+          --native-pair-hmm-threads ${task.cpus} \
+          --reference ${genome} \
+          --output output.gatk.vcf.gz \
+          ${bam_params} \
+          --standard-min-confidence-threshold-for-calling 20.0 \
+          --dont-use-soft-clipped-bases 
 
   # Variant filtering
   $GATK VariantFiltration \
