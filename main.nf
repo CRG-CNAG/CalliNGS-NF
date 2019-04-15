@@ -31,7 +31,7 @@
 params.genome     = "$baseDir/data/genome.fa"
 params.variants   = "$baseDir/data/known_variants.vcf.gz"
 params.blacklist  = "$baseDir/data/blacklist.bed" 
-params.reads      = "$baseDir/data/reads/rep1_{1,2}.fq.gz"
+params.reads      = "$baseDir/data/reads/*_{1,2}.fq.gz"
 params.results    = "results"
 params.gatk       = '/usr/local/bin/GenomeAnalysisTK.jar'
 params.gatk_launch = "java -jar $params.gatk" 
@@ -171,7 +171,7 @@ process '2_rnaseq_mapping_star' {
       set replicateId, file(reads) from reads_ch 
 
   output: 
-      set replicateId, file('Aligned.sortedByCoord.out.bam'), file('Aligned.sortedByCoord.out.bam.bai') into aligned_bam_ch
+      set replicateId, file('Aligned.sortedByCoord.uniq.bam'), file('Aligned.sortedByCoord.uniq.bam.bai') into aligned_bam_ch
 
   script:    
   """
@@ -206,8 +206,12 @@ process '2_rnaseq_mapping_star' {
        --outSAMtype BAM SortedByCoordinate \
        --outSAMattrRGline ID:$replicateId LB:library PL:illumina PU:machine SM:GM12878
 
+  # Select only unique alignments, no multimaps
+  (samtools view -H Aligned.sortedByCoord.out.bam; samtools view Aligned.sortedByCoord.out.bam| grep -w 'NH:i:1') \
+  |samtools view -Sb -  > Aligned.sortedByCoord.uniq.bam
+  
   # Index the BAM file
-  samtools index Aligned.sortedByCoord.out.bam
+  samtools index Aligned.sortedByCoord.uniq.bam
   """
 }
 
@@ -241,13 +245,11 @@ process '3_rnaseq_gatk_splitNcigar' {
   script:
   """
   # SplitNCigarReads and reassign mapping qualities
-  $GATK -T SplitNCigarReads \
-          -R $genome -I $bam \
-          -o split.bam \
-          -rf ReassignOneMappingQuality \
-          -RMQF 255 -RMQT 60 \
-          -U ALLOW_N_CIGAR_READS \
-          --fix_misencoded_quality_scores
+  $GATK SplitNCigarReads \
+  -R genome.fa \
+  -I $bam \
+  --refactor-cigar-string \
+  -O split.bam
   """
 }
 
@@ -282,27 +284,16 @@ process '4_rnaseq_gatk_recalibrate' {
   sampleId = replicateId.replaceAll(/[12]$/,'')
   """
   # Indel Realignment and Base Recalibration
-  $GATK -T BaseRecalibrator \
-          --default_platform illumina \
-          -cov ReadGroupCovariate \
-          -cov QualityScoreCovariate \
-          -cov CycleCovariate \
-          -knownSites ${variants_file} \
-          -cov ContextCovariate \
-          -R ${genome} -I ${bam} \
-          --downsampling_type NONE \
-          -nct ${task.cpus} \
-          -o final.rnaseq.grp 
+  $GATK BaseRecalibrator \
+          -R ${genome} \
+          -I ${bam} \
+          --known-sites ${variants_file} \
+          -O final.rnaseq.grp 
 
-  $GATK -T PrintReads \
+  $GATK ApplyBQSR \
           -R ${genome} -I ${bam} \
-          -BQSR final.rnaseq.grp \
-          -nct ${task.cpus} \
-          -o final.bam
-
-  # Select only unique alignments, no multimaps
-  (samtools view -H final.bam; samtools view final.bam| grep -w 'NH:i:1') \
-  |samtools view -Sb -  > ${replicateId}.final.uniq.bam
+          --bqsr-recal-file final.rnaseq.grp \
+          -O ${replicateId}.final.uniq.bam
 
   # Index BAM files
   samtools index ${replicateId}.final.uniq.bam
@@ -327,37 +318,40 @@ process '4_rnaseq_gatk_recalibrate' {
 
 process '5_rnaseq_call_variants' {
   tag "$sampleId"
-  label 'mem_large'
+  label 'mem_xlarge'
 
   input:
       file genome from genome_file
       file index from genome_index_ch
       file dict from genome_dict_ch
       set sampleId, file(bam), file(bai) from final_output_ch.groupTuple()
-  
+ 
   output: 
       set sampleId, file('final.vcf') into vcf_files
 
   script:
+  
+  def bam_params = bam.collect{ "-I $it" }.join(' ') 
   """
   # fix absolute path in dict file
   sed -i 's@UR:file:.*${genome}@UR:file:${genome}@g' $dict
-  echo "${bam.join('\n')}" > bam.list
   
   # Variant calling
-  $GATK -T HaplotypeCaller \
-          -R $genome -I bam.list \
-          -dontUseSoftClippedBases \
-          -stand_call_conf 20.0 \
-          -o output.gatk.vcf.gz
+  $GATK HaplotypeCaller \
+  --native-pair-hmm-threads ${task.cpus} \
+  --reference ${genome} \
+  --output output.gatk.vcf.gz \
+  ${bam_params} \
+  --standard-min-confidence-threshold-for-calling 20.0 \
+  --dont-use-soft-clipped-bases 
 
   # Variant filtering
-  $GATK -T VariantFiltration \
+  $GATK VariantFiltration \
           -R $genome -V output.gatk.vcf.gz \
-          -window 35 -cluster 3 \
-          -filterName FS -filter "FS > 30.0" \
-          -filterName QD -filter "QD < 2.0" \
-          -o final.vcf
+          --cluster-window-size 35 --cluster-size 3 \
+          --filter-name FS --filter-expression \"FS > 30.0\" \
+          --filter-name QD --filter-expression \"QD < 2.0\" \
+          -O final.vcf
   """
 }
 
@@ -401,7 +395,7 @@ process '6B_prepare_vcf_for_ase' {
   input: 
       set sampleId, file('final.vcf'), file('commonSNPs.diff.sites_in_files') from vcf_and_snps_ch
   output: 
-      set sampleId, file('known_snps.vcf') into vcf_for_ASE
+      set sampleId, file('known_snps.vcf.gz'), file('known_snps.vcf.gz.tbi') into vcf_for_ASE
       file('AF.histogram.pdf') into gghist_pdfs
 
   script:
@@ -417,6 +411,9 @@ process '6B_prepare_vcf_for_ase' {
                >AF.4R
 
   gghist.R -i AF.4R -o AF.histogram.pdf
+  # Known SNPs have to be zipped and indexed for being used
+  bgzip -c known_snps.vcf  > known_snps.vcf.gz
+  tabix -p vcf known_snps.vcf.gz
   '''
 }
 
@@ -446,7 +443,8 @@ bam_for_ASE_ch
       def bam = left[1]
       def bai = left[2]
       def vcf = right[1]
-      tuple(sampleId, vcf, bam, bai)  
+      def tbi = right[2]
+      tuple(sampleId, vcf, tbi, bam, bai)  
     }
     .set { grouped_vcf_bam_bai_ch }
 
@@ -467,20 +465,20 @@ process '6C_ASE_knownSNPs' {
       file genome from genome_file 
       file index from genome_index_ch
       file dict from genome_dict_ch
-      set sampleId, file(vcf),  file(bam), file(bai) from grouped_vcf_bam_bai_ch
+      set sampleId, file(vcf), file(tbi), file(bam), file(bai) from grouped_vcf_bam_bai_ch
   
   output:
       file "ASE.tsv"
   
   script:
+  def bam_params = bam.collect{ "-I $it" }.join(' ') 
   """
-  echo "${bam.join('\n')}" > bam.list
-    
-  $GATK -R ${genome} \
-          -T ASEReadCounter \
-          -o ASE.tsv \
-          -I bam.list \
-          -sites ${vcf}
+   
+  $GATK ASEReadCounter \
+          -R ${genome} \
+          -O ASE.tsv \
+          ${bam_params} \
+          -V ${vcf}
   """
 }
 
