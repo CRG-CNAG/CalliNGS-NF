@@ -34,25 +34,21 @@ params.variants   = "$baseDir/data/known_variants.vcf.gz"
 params.blacklist  = "$baseDir/data/blacklist.bed" 
 params.reads      = "$baseDir/data/reads/*_{1,2}.fq.gz"
 params.results    = "results"
-params.gatk       = '/usr/local/bin/GenomeAnalysisTK.jar'
-params.gatk_launch = "java -jar $params.gatk" 
 
 log.info """\
-C A L L I N G S  -  N F    v 1.0 
+C A L L I N G S  -  N F    v 1.1 
 ================================
 genome   : $params.genome
 reads    : $params.reads
 variants : $params.variants
 blacklist: $params.blacklist
 results  : $params.results
-gatk     : $params.gatk
 """
 
 /*
  *  Parse the input parameters
  */
 
-GATK            = params.gatk_launch
 genome_file     = file(params.genome)
 variants_file   = file(params.variants)
 blacklist_file  = file(params.blacklist)
@@ -246,7 +242,7 @@ process '3_rnaseq_gatk_splitNcigar' {
   script:
   """
   # SplitNCigarReads and reassign mapping qualities
-  $GATK SplitNCigarReads \
+  gatk SplitNCigarReads \
             -R $genome \
             -I $bam \
             --refactor-cigar-string \
@@ -285,13 +281,13 @@ process '4_rnaseq_gatk_recalibrate' {
   sampleId = replicateId.replaceAll(/[12]$/,'')
   """
   # Indel Realignment and Base Recalibration
-  $GATK BaseRecalibrator \
+  gatk BaseRecalibrator \
           -R ${genome} \
           -I ${bam} \
           --known-sites ${variants_file} \
           -O final.rnaseq.grp 
 
-  $GATK ApplyBQSR \
+  gatk ApplyBQSR \
           -R ${genome} -I ${bam} \
           --bqsr-recal-file final.rnaseq.grp \
           -O ${replicateId}.final.uniq.bam
@@ -338,7 +334,7 @@ process '5_rnaseq_call_variants' {
   sed -i 's@UR:file:.*${genome}@UR:file:${genome}@g' $dict
   
   # Variant calling
-  $GATK HaplotypeCaller \
+  gatk HaplotypeCaller \
           --native-pair-hmm-threads ${task.cpus} \
           --reference ${genome} \
           --output output.gatk.vcf.gz \
@@ -347,7 +343,7 @@ process '5_rnaseq_call_variants' {
           --dont-use-soft-clipped-bases 
 
   # Variant filtering
-  $GATK VariantFiltration \
+  gatk VariantFiltration \
           -R $genome -V output.gatk.vcf.gz \
           --cluster-window-size 35 --cluster-size 3 \
           --filter-name FS --filter-expression \"FS > 30.0\" \
@@ -475,7 +471,7 @@ process '6C_ASE_knownSNPs' {
   def bam_params = bam.collect{ "-I $it" }.join(' ') 
   """
    
-  $GATK ASEReadCounter \
+  gatk ASEReadCounter \
           -R ${genome} \
           -O ASE.tsv \
           ${bam_params} \

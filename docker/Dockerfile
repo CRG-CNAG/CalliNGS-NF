@@ -4,3 +4,5 @@ RUN apt-get update && apt-get install -y python \
  && curl -fsSL https://github.com/broadinstitute/gatk/releases/download/4.1.1.0/gatk-4.1.1.0.zip > gatk-4.zip \
  && unzip gatk-4.zip \
  && rm gatk-4.zip
+
+ENV PATH=/gatk-4.1.1.0:$PATH
