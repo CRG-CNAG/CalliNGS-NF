@@ -81,7 +81,7 @@ process PREPARE_VCF_FILE {
       file blacklisted
 
   output:
-      set file("${variantsFile.baseName}.filtered.recode.vcf.gz"), 
+      tuple file("${variantsFile.baseName}.filtered.recode.vcf.gz"), 
           file("${variantsFile.baseName}.filtered.recode.vcf.gz.tbi")
   
   script:  
@@ -106,10 +106,10 @@ process RNASEQ_MAPPING_STAR {
   input: 
       file genome  
       file genomeDir
-      set replicateId, file(reads) 
+      tuple replicateId, file(reads) 
 
   output: 
-      set replicateId, 
+      tuple replicateId, 
           file('Aligned.sortedByCoord.out.bam'), 
           file('Aligned.sortedByCoord.out.bam.bai')
 
@@ -167,10 +167,10 @@ process RNASEQ_GATK_SPLITNCIGAR {
       file genome
       file index
       file genome_dict
-      set replicateId, file(bam), file(index)
+      tuple replicateId, file(bam), file(index)
 
   output:
-      set replicateId, 
+      tuple replicateId, 
           file('split.bam'), 
           file('split.bai')
   
@@ -202,11 +202,11 @@ process RNASEQ_GATK_RECALIBRATE {
       file genome  
       file index
       file dict
-      set replicateId, file(bam), file(index)
-      set file(variants_file), file(variants_file_index)
+      tuple replicateId, file(bam), file(index)
+      tuple file(variants_file), file(variants_file_index)
 
   output:
-      set sampleId, 
+      tuple sampleId, 
           file("${replicateId}.final.uniq.bam"), 
           file("${replicateId}.final.uniq.bam.bai")
   
@@ -258,10 +258,10 @@ process RNASEQ_CALL_VARIANTS {
       file genome
       file index 
       file dict 
-      set sampleId, file(bam), file(bai) 
+      tuple sampleId, file(bam), file(bai) 
   
   output: 
-      set sampleId, file('final.vcf')
+      tuple sampleId, file('final.vcf')
 
   script:
   """
@@ -297,10 +297,10 @@ process POST_PROCESS_VCF {
   publishDir "$params.results/$sampleId" 
 
   input:
-      set sampleId, file('final.vcf')
-      set file('filtered.recode.vcf.gz'), file('filtered.recode.vcf.gz.tbi')
+      tuple sampleId, file('final.vcf')
+      tuple file('filtered.recode.vcf.gz'), file('filtered.recode.vcf.gz.tbi')
   output: 
-      set sampleId, 
+      tuple sampleId, 
           file('final.vcf'), 
           file('commonSNPs.diff.sites_in_files') 
   
@@ -321,9 +321,9 @@ process PREPARE_VCF_FOR_ASE {
   publishDir "$params.results/$sampleId" 
 
   input: 
-      set sampleId, file('final.vcf'), file('commonSNPs.diff.sites_in_files')
+      tuple sampleId, file('final.vcf'), file('commonSNPs.diff.sites_in_files')
   output: 
-      set sampleId, file('known_snps.vcf') 
+      tuple sampleId, file('known_snps.vcf') 
       file('AF.histogram.pdf')
 
   script:
@@ -358,7 +358,7 @@ process ASE_KNOWNSNPS {
       file genome 
       file index
       file dict 
-      set sampleId, file(vcf),  file(bam), file(bai)
+      tuple sampleId, file(vcf),  file(bam), file(bai)
   
   output:
       file "ASE.tsv"
