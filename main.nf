@@ -73,39 +73,39 @@ workflow {
 
       RNASEQ_MAPPING_STAR( 
             genome_file, 
-            PREPARE_STAR_GENOME_INDEX.output, 
+            PREPARE_STAR_GENOME_INDEX.out, 
             reads_ch)
 
       RNASEQ_GATK_SPLITNCIGAR(
             genome_file, 
-            PREPARE_GENOME_SAMTOOLS.output, 
-            PREPARE_GENOME_PICARD.output, 
-            RNASEQ_MAPPING_STAR.output)
+            PREPARE_GENOME_SAMTOOLS.out, 
+            PREPARE_GENOME_PICARD.out, 
+            RNASEQ_MAPPING_STAR.out)
 
       RNASEQ_GATK_RECALIBRATE(
-                  genome_file, PREPARE_GENOME_SAMTOOLS.output, 
-                  PREPARE_GENOME_PICARD.output, 
-                  RNASEQ_GATK_SPLITNCIGAR.output, 
-                  PREPARE_VCF_FILE.output)
+                  genome_file, PREPARE_GENOME_SAMTOOLS.out, 
+                  PREPARE_GENOME_PICARD.out, 
+                  RNASEQ_GATK_SPLITNCIGAR.out, 
+                  PREPARE_VCF_FILE.out)
 
       RNASEQ_CALL_VARIANTS( 
             genome_file, 
-            PREPARE_GENOME_SAMTOOLS.output, 
-            PREPARE_GENOME_PICARD.output, 
-            RNASEQ_GATK_RECALIBRATE.output.groupTuple())
+            PREPARE_GENOME_SAMTOOLS.out, 
+            PREPARE_GENOME_PICARD.out, 
+            RNASEQ_GATK_RECALIBRATE.out.groupTuple())
 
       POST_PROCESS_VCF( 
-            RNASEQ_CALL_VARIANTS.output, 
-            PREPARE_VCF_FILE.output )
+            RNASEQ_CALL_VARIANTS.out, 
+            PREPARE_VCF_FILE.out )
 
-      PREPARE_VCF_FOR_ASE( POST_PROCESS_VCF.output )
+      PREPARE_VCF_FOR_ASE( POST_PROCESS_VCF.out )
 
       ASE_KNOWNSNPS(
             genome_file, 
-            PREPARE_GENOME_SAMTOOLS.output, 
-            PREPARE_GENOME_PICARD.output, 
+            PREPARE_GENOME_SAMTOOLS.out, 
+            PREPARE_GENOME_PICARD.out, 
             group_per_sample(   
-                  RNASEQ_GATK_RECALIBRATE.output, 
-                  PREPARE_VCF_FOR_ASE.output.first) )
+                  RNASEQ_GATK_RECALIBRATE.out, 
+                  PREPARE_VCF_FOR_ASE.out[0]) )
 
 }
