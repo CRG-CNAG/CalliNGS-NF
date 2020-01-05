@@ -39,7 +39,7 @@ params.gatk       = '/usr/local/bin/GenomeAnalysisTK.jar'
  * Import modules 
  */
 nextflow.preview.dsl = 2
-include 'modules.nf' params(gatk: params.gatk, results: params.results)
+include './modules.nf' params(gatk: params.gatk, results: params.results)
 
 log.info """\
 C A L L I N G S  -  N F    v 2.0 
