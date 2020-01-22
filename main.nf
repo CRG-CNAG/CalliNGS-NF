@@ -95,8 +95,8 @@ process '1B_prepare_genome_picard' {
 
   script:
   """
-  PICARD=`which picard.jar`
-  java -jar \$PICARD CreateSequenceDictionary R= $genome O= ${genome.baseName}.dict
+  PICARD=`which picard`
+  picard CreateSequenceDictionary R= $genome O= ${genome.baseName}.dict
   """
 }
 
@@ -175,27 +175,10 @@ process '2_rnaseq_mapping_star' {
 
   script:    
   """
-  # ngs-nf-dev Align reads to genome
-  STAR --genomeDir $genomeDir \
-       --readFilesIn $reads \
-       --runThreadN ${task.cpus} \
-       --readFilesCommand zcat \
-       --outFilterType BySJout \
-       --alignSJoverhangMin 8 \
-       --alignSJDBoverhangMin 1 \
-       --outFilterMismatchNmax 999
-    
-  # 2nd pass (improve alignmets using table of splice junctions and create a new index)  
-  mkdir genomeDir  
-  STAR --runMode genomeGenerate \
-       --genomeDir genomeDir \
-       --genomeFastaFiles $genome \
-       --sjdbFileChrStartEnd SJ.out.tab \
-       --sjdbOverhang 75 \
-       --runThreadN ${task.cpus}  
-    
-  # Final read alignments  
-  STAR --genomeDir genomeDir \
+  # use new 2pass mode of STAR
+ 
+  STAR --twopassMode Basic \
+       --genomeDir $genomeDir \
        --readFilesIn $reads \
        --runThreadN ${task.cpus} \
        --readFilesCommand zcat \
@@ -204,8 +187,39 @@ process '2_rnaseq_mapping_star' {
        --alignSJDBoverhangMin 1 \
        --outFilterMismatchNmax 999 \
        --outSAMtype BAM SortedByCoordinate \
-       --outSAMattrRGline ID:$replicateId LB:library PL:illumina PU:machine SM:GM12878
-
+       --outSAMattrRGline ID:$replicateId LB:library PL:illumina PU:machine SM:$replicateId
+ 
+  #  # ngs-nf-dev Align reads to genome
+  #  STAR --genomeDir $genomeDir \
+  #       --readFilesIn $reads \
+  #       --runThreadN ${task.cpus} \
+  #       --readFilesCommand zcat \
+  #       --outFilterType BySJout \
+  #       --alignSJoverhangMin 8 \
+  #       --alignSJDBoverhangMin 1 \
+  #       --outFilterMismatchNmax 999
+  #    
+  #  # 2nd pass (improve alignmets using table of splice junctions and create a new index)  
+  #  mkdir genomeDir  
+  #  STAR --runMode genomeGenerate \
+  #       --genomeDir genomeDir \
+  #       --genomeFastaFiles $genome \
+  #       --sjdbFileChrStartEnd SJ.out.tab \
+  #       --sjdbOverhang 75 \
+  #       --runThreadN ${task.cpus}  
+  #    
+  #  # Final read alignments  
+  #  STAR --genomeDir genomeDir \
+  #       --readFilesIn $reads \
+  #       --runThreadN ${task.cpus} \
+  #       --readFilesCommand zcat \
+  #       --outFilterType BySJout \
+  #       --alignSJoverhangMin 8 \
+  #       --alignSJDBoverhangMin 1 \
+  #       --outFilterMismatchNmax 999 \
+  #       --outSAMtype BAM SortedByCoordinate \
+  #       --outSAMattrRGline ID:$replicateId LB:library PL:illumina PU:machine SM:GM12878
+  
   # Index the BAM file
   samtools index Aligned.sortedByCoord.out.bam
   """
