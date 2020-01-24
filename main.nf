@@ -86,7 +86,7 @@ process '1A_prepare_genome_samtools' {
 
 process '1B_prepare_genome_picard' {
   tag "$genome.baseName"
-  label 'mem_xlarge'
+  label 'star'
 
   input:
       file genome from genome_file
@@ -107,6 +107,7 @@ process '1B_prepare_genome_picard' {
 
 process '1C_prepare_star_genome_index' {
   tag "$genome.baseName"
+  label 'star'
 
   input:
       file genome from genome_file
@@ -164,6 +165,7 @@ process '1D_prepare_vcf_file' {
 
 process '2_rnaseq_mapping_star' {
   tag "$replicateId"
+  label 'star'
 
   input: 
       file genome from genome_file 
@@ -241,7 +243,7 @@ process '2_rnaseq_mapping_star' {
 
 process '3_rnaseq_gatk_splitNcigar' {
   tag "$replicateId"
-  label 'mem_large'
+  label 'star'
   
   input: 
       file genome from genome_file 
@@ -280,7 +282,7 @@ process '3_rnaseq_gatk_splitNcigar' {
 
 process '4_rnaseq_gatk_recalibrate' {
   tag "$replicateId"
-  label 'mem_large'    
+  label 'star'    
 
   input: 
       file genome from genome_file 
@@ -341,7 +343,7 @@ process '4_rnaseq_gatk_recalibrate' {
 
 process '5_rnaseq_call_variants' {
   tag "$sampleId"
-  label 'mem_large'
+  label 'star'
 
   input:
       file genome from genome_file
@@ -475,7 +477,7 @@ bam_for_ASE_ch
 process '6C_ASE_knownSNPs' {
   tag "$sampleId"
   publishDir "$params.results/$sampleId" 
-  label 'mem_large'  
+  label 'star'  
 
   input:
       file genome from genome_file 
