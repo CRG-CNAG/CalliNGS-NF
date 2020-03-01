@@ -1,7 +1,7 @@
 # CalliNGS-NF
 A Nextflow pipeline for Variant Calling Analysis with NGS RNA-Seq data based on GATK best practices.
 
-[![nextflow](https://img.shields.io/badge/nextflow-%E2%89%A50.24.0-brightgreen.svg)](http://nextflow.io)
+[![nextflow](https://img.shields.io/badge/nextflow-%E2%89%A520.01.0-brightgreen.svg)](http://nextflow.io)
 [![Build Status](https://travis-ci.org/CRG-CNAG/CalliNGS-NF.svg?branch=master)](https://travis-ci.org/CRG-CNAG/CalliNGS-NF)
 
 ## Quickstart 
