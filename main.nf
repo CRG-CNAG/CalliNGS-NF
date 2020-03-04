@@ -46,13 +46,10 @@ results  : $params.results
 """
 
 /*
- *  Parse the input parameters
+ * Defines the read pair files channel
  */
 
-genome_file     = file(params.genome)
-variants_file   = file(params.variants)
-blacklist_file  = file(params.blacklist)
-reads_ch        = Channel.fromFilePairs(params.reads)
+reads_ch = Channel.fromFilePairs(params.reads)
 
 
 /**********
@@ -65,10 +62,10 @@ process '1A_prepare_genome_samtools' {
   tag "$genome.baseName"
  
   input: 
-      file genome from genome_file 
+    path genome from params.genome 
  
   output: 
-      file "${genome}.fai" into genome_index_ch  
+    path "${genome}.fai" into genome_index_ch  
   
   script:
   """
@@ -86,9 +83,9 @@ process '1B_prepare_genome_picard' {
   label 'mem_xlarge'
 
   input:
-      file genome from genome_file
+    path genome from params.genome
   output:
-      file "${genome.baseName}.dict" into genome_dict_ch
+    path "${genome.baseName}.dict" into genome_dict_ch
 
   script:
   """
@@ -106,9 +103,9 @@ process '1C_prepare_star_genome_index' {
   tag "$genome.baseName"
 
   input:
-      file genome from genome_file
+    path genome from params.genome
   output:
-      file "genome_dir" into genome_dir_ch
+    path "genome_dir" into genome_dir_ch
 
   script:
   """
@@ -130,11 +127,13 @@ process '1D_prepare_vcf_file' {
   tag "$variantsFile.baseName"
 
   input: 
-      file variantsFile from variants_file
-      file blacklisted from blacklist_file
+    path variantsFile from params.variants
+    path blacklisted from params.blacklist
 
   output:
-      set file("${variantsFile.baseName}.filtered.recode.vcf.gz"), file("${variantsFile.baseName}.filtered.recode.vcf.gz.tbi") into prepared_vcf_ch
+    tuple \
+      path("${variantsFile.baseName}.filtered.recode.vcf.gz"), \
+      path("${variantsFile.baseName}.filtered.recode.vcf.gz.tbi") into prepared_vcf_ch
   
   script:  
   """
@@ -152,7 +151,6 @@ process '1D_prepare_vcf_file' {
  *********/
 
 
-
 /**********
  * PART 2: STAR RNA-Seq Mapping
  *
@@ -163,12 +161,15 @@ process '2_rnaseq_mapping_star' {
   tag "$replicateId"
 
   input: 
-      file genome from genome_file 
-      file genomeDir from genome_dir_ch
-      set replicateId, file(reads) from reads_ch 
+    path genome from params.genome 
+    path genomeDir from genome_dir_ch
+    tuple replicateId, path(reads) from reads_ch 
 
   output: 
-      set replicateId, file('Aligned.sortedByCoord.uniq.bam'), file('Aligned.sortedByCoord.uniq.bam.bai') into aligned_bam_ch
+    tuple \
+      replicateId, \
+      path('Aligned.sortedByCoord.uniq.bam'), \
+      path('Aligned.sortedByCoord.uniq.bam.bai') into aligned_bam_ch
 
   script:    
   """
@@ -231,13 +232,13 @@ process '3_rnaseq_gatk_splitNcigar' {
   label 'mem_large'
   
   input: 
-      file genome from genome_file 
-      file index from genome_index_ch
-      file genome_dict from genome_dict_ch
-      set replicateId, file(bam), file(index) from aligned_bam_ch
+    path genome from params.genome 
+    path index from genome_index_ch
+    path genome_dict from genome_dict_ch
+    tuple replicateId, path(bam), path(index) from aligned_bam_ch
 
   output:
-      set replicateId, file('split.bam'), file('split.bai') into splitted_bam_ch
+    tuple replicateId, path('split.bam'), path('split.bai') into splitted_bam_ch
   
   script:
   """
@@ -268,14 +269,17 @@ process '4_rnaseq_gatk_recalibrate' {
   label 'mem_large'    
 
   input: 
-      file genome from genome_file 
-      file index from genome_index_ch
-      file dict from genome_dict_ch
-      set replicateId, file(bam), file(index) from splitted_bam_ch
-      set file(variants_file), file(variants_file_index) from prepared_vcf_ch
+    path genome from params.genome 
+    path index from genome_index_ch
+    path dict from genome_dict_ch
+    tuple replicateId, path(bam), path(index) from splitted_bam_ch
+    tuple path(variants_file), path(variants_file_index) from prepared_vcf_ch
 
   output:
-      set sampleId, file("${replicateId}.final.uniq.bam"), file("${replicateId}.final.uniq.bam.bai") into (final_output_ch, bam_for_ASE_ch)
+    tuple \
+      sampleId, \
+      path("${replicateId}.final.uniq.bam"), \
+      path("${replicateId}.final.uniq.bam.bai") into (final_output_ch, bam_for_ASE_ch)
   
   script: 
   sampleId = replicateId.replaceAll(/[12]$/,'')
@@ -302,7 +306,6 @@ process '4_rnaseq_gatk_recalibrate' {
  ******/
 
 
-
 /***********
  * PART 5: GATK Variant Calling
  *
@@ -318,13 +321,13 @@ process '5_rnaseq_call_variants' {
   label 'mem_xlarge'
 
   input:
-      file genome from genome_file
-      file index from genome_index_ch
-      file dict from genome_dict_ch
-      set sampleId, file(bam), file(bai) from final_output_ch.groupTuple()
+    path genome from params.genome
+    path index from genome_index_ch
+    path dict from genome_dict_ch
+    tuple sampleId, path(bam), path(bai) from final_output_ch.groupTuple()
  
   output: 
-      set sampleId, file('final.vcf') into vcf_files
+    tuple sampleId, path('final.vcf') into vcf_files
 
   script:
   
@@ -368,10 +371,10 @@ process '6A_post_process_vcf' {
   publishDir "$params.results/$sampleId" 
 
   input:
-      set sampleId, file('final.vcf') from vcf_files
-      set file('filtered.recode.vcf.gz'), file('filtered.recode.vcf.gz.tbi') from prepared_vcf_ch 
+    tuple sampleId, path('final.vcf') from vcf_files
+    tuple path('filtered.recode.vcf.gz'), path('filtered.recode.vcf.gz.tbi') from prepared_vcf_ch 
   output: 
-      set sampleId, file('final.vcf'), file('commonSNPs.diff.sites_in_files') into vcf_and_snps_ch
+    tuple sampleId, path('final.vcf'), path('commonSNPs.diff.sites_in_files') into vcf_and_snps_ch
   
   script:
   '''
@@ -390,10 +393,10 @@ process '6B_prepare_vcf_for_ase' {
   publishDir "$params.results/$sampleId" 
 
   input: 
-      set sampleId, file('final.vcf'), file('commonSNPs.diff.sites_in_files') from vcf_and_snps_ch
+    tuple sampleId, path('final.vcf'), path('commonSNPs.diff.sites_in_files') from vcf_and_snps_ch
   output: 
-      set sampleId, file('known_snps.vcf.gz'), file('known_snps.vcf.gz.tbi') into vcf_for_ASE
-      file('AF.histogram.pdf') into gghist_pdfs
+    tuple sampleId, path('known_snps.vcf.gz'), path('known_snps.vcf.gz.tbi') into vcf_for_ASE
+    path  'AF.histogram.pdf' into gghist_pdfs
 
   script:
   '''
@@ -459,13 +462,13 @@ process '6C_ASE_knownSNPs' {
   label 'mem_large'  
 
   input:
-      file genome from genome_file 
-      file index from genome_index_ch
-      file dict from genome_dict_ch
-      set sampleId, file(vcf), file(tbi), file(bam), file(bai) from grouped_vcf_bam_bai_ch
+    path genome from params.genome 
+    path index from genome_index_ch
+    path dict from genome_dict_ch
+    tuple sampleId, path(vcf), path(tbi), path(bam), path(bai) from grouped_vcf_bam_bai_ch
   
   output:
-      file "ASE.tsv"
+    path "ASE.tsv"
   
   script:
   def bam_params = bam.collect{ "-I $it" }.join(' ') 
