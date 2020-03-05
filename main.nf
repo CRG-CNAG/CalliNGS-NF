@@ -39,7 +39,21 @@ params.gatk       = '/usr/local/bin/GenomeAnalysisTK.jar'
  * Import modules 
  */
 nextflow.preview.dsl = 2
-include './modules.nf' params(gatk: params.gatk, results: params.results)
+
+include { 
+  PREPARE_GENOME_SAMTOOLS;
+  PREPARE_GENOME_PICARD; 
+  PREPARE_STAR_GENOME_INDEX;
+  PREPARE_VCF_FILE;
+  RNASEQ_MAPPING_STAR;
+  RNASEQ_GATK_SPLITNCIGAR; 
+  RNASEQ_GATK_RECALIBRATE;
+  RNASEQ_CALL_VARIANTS;
+  POST_PROCESS_VCF;
+  PREPARE_VCF_FOR_ASE;
+  ASE_KNOWNSNPS;
+  group_per_sample;
+  } from './modules.nf' 
 
 log.info """\
 C A L L I N G S  -  N F    v 2.0 
@@ -52,44 +66,37 @@ results  : $params.results
 gatk     : $params.gatk
 """
 
-/*
- *  Parse the input parameters
- */
-
-genome_file     = file(params.genome)
-variants_file   = file(params.variants)
-blacklist_file  = file(params.blacklist)
-reads_ch        = Channel.fromFilePairs(params.reads)
 
 workflow {
+      reads_ch = Channel.fromFilePairs(params.reads)
 
-      PREPARE_GENOME_SAMTOOLS(genome_file)
+      PREPARE_GENOME_SAMTOOLS(params.genome)
 
-      PREPARE_GENOME_PICARD(genome_file)
+      PREPARE_GENOME_PICARD(params.genome)
 
-      PREPARE_STAR_GENOME_INDEX(genome_file)
+      PREPARE_STAR_GENOME_INDEX(params.genome)
 
-      PREPARE_VCF_FILE(variants_file, blacklist_file)
+      PREPARE_VCF_FILE(params.variants, params.blacklist)
 
       RNASEQ_MAPPING_STAR( 
-            genome_file, 
+            params.genome, 
             PREPARE_STAR_GENOME_INDEX.out, 
             reads_ch)
 
       RNASEQ_GATK_SPLITNCIGAR(
-            genome_file, 
+            params.genome, 
             PREPARE_GENOME_SAMTOOLS.out, 
             PREPARE_GENOME_PICARD.out, 
             RNASEQ_MAPPING_STAR.out)
 
       RNASEQ_GATK_RECALIBRATE(
-                  genome_file, PREPARE_GENOME_SAMTOOLS.out, 
+                  params.genome, PREPARE_GENOME_SAMTOOLS.out, 
                   PREPARE_GENOME_PICARD.out, 
                   RNASEQ_GATK_SPLITNCIGAR.out, 
                   PREPARE_VCF_FILE.out)
 
       RNASEQ_CALL_VARIANTS( 
-            genome_file, 
+            params.genome, 
             PREPARE_GENOME_SAMTOOLS.out, 
             PREPARE_GENOME_PICARD.out, 
             RNASEQ_GATK_RECALIBRATE.out.groupTuple())
@@ -101,7 +108,7 @@ workflow {
       PREPARE_VCF_FOR_ASE( POST_PROCESS_VCF.out )
 
       ASE_KNOWNSNPS(
-            genome_file, 
+            params.genome, 
             PREPARE_GENOME_SAMTOOLS.out, 
             PREPARE_GENOME_PICARD.out, 
             group_per_sample(   
