@@ -89,8 +89,7 @@ process '1B_prepare_genome_picard' {
 
   script:
   """
-  PICARD=`which picard.jar`
-  java -jar \$PICARD CreateSequenceDictionary R= $genome O= ${genome.baseName}.dict
+  gatk CreateSequenceDictionary -R $genome -O ${genome.baseName}.dict
   """
 }
 
