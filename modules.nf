@@ -1,12 +1,5 @@
-params.gatk       = '/usr/local/bin/GenomeAnalysisTK.jar'
-params.gatk_launch = "java -jar $params.gatk" 
-params.results    = "results"
 
-GATK = params.gatk_launch
-
-/**********
- * PART 1: Data preparation
- *
+/*
  * Process 1A: Create a FASTA genome index (.fai) with samtools for GATK
  */
 
@@ -14,16 +7,17 @@ process PREPARE_GENOME_SAMTOOLS {
   tag "$genome.baseName"
  
   input: 
-    path genome  
+    path genome
  
   output: 
-    path "${genome}.fai"   
+    path "${genome}.fai"
   
   script:
   """
   samtools faidx ${genome}
   """
 }
+
 
 /*
  * Process 1B: Create a FASTA genome sequence dictionary with Picard for GATK
@@ -45,6 +39,7 @@ process PREPARE_GENOME_PICARD {
   """
 }
 
+
 /*
  * Process 1C: Create STAR genome index file.
  */
@@ -53,8 +48,7 @@ process PREPARE_STAR_GENOME_INDEX {
   tag "$genome.baseName"
 
   input:
-    path genome 
-  
+    path genome
   output:
     path "genome_dir"
 
@@ -69,6 +63,7 @@ process PREPARE_STAR_GENOME_INDEX {
   """
 }
 
+
 /*
  * Process 1D: Create a file containing the filtered and recoded set of variants
  */
@@ -81,7 +76,9 @@ process PREPARE_VCF_FILE {
     path blacklisted
 
   output:
-    tuple path("${variantsFile.baseName}.filtered.recode.vcf.gz"), path("${variantsFile.baseName}.filtered.recode.vcf.gz.tbi")
+    tuple \
+      path("${variantsFile.baseName}.filtered.recode.vcf.gz"), \
+      path("${variantsFile.baseName}.filtered.recode.vcf.gz.tbi")
   
   script:  
   """
@@ -94,8 +91,7 @@ process PREPARE_VCF_FILE {
   """
 }
 
-/**********
- *
+/*
  * Process 2: Align RNA-Seq reads to the genome with STAR
  */
 
@@ -103,19 +99,22 @@ process RNASEQ_MAPPING_STAR {
   tag "$replicateId"
 
   input: 
-    path genome  
+    path genome
     path genomeDir
     tuple val(replicateId), path(reads) 
 
   output: 
-    tuple val(replicateId), path('Aligned.sortedByCoord.out.bam'), path('Aligned.sortedByCoord.out.bam.bai')
+    tuple \
+      val(replicateId), \
+      path('Aligned.sortedByCoord.uniq.bam'), \
+      path('Aligned.sortedByCoord.uniq.bam.bai')
 
-  script:    
+  script:
   """
   # ngs-nf-dev Align reads to genome
   STAR --genomeDir $genomeDir \
        --readFilesIn $reads \
-       --runThreadN ${task.cpus} \
+       --runThreadN $task.cpus \
        --readFilesCommand zcat \
        --outFilterType BySJout \
        --alignSJoverhangMin 8 \
@@ -129,12 +128,12 @@ process RNASEQ_MAPPING_STAR {
        --genomeFastaFiles $genome \
        --sjdbFileChrStartEnd SJ.out.tab \
        --sjdbOverhang 75 \
-       --runThreadN ${task.cpus}  
+       --runThreadN $task.cpus
     
   # Final read alignments  
   STAR --genomeDir genomeDir \
        --readFilesIn $reads \
-       --runThreadN ${task.cpus} \
+       --runThreadN $task.cpus \
        --readFilesCommand zcat \
        --outFilterType BySJout \
        --alignSJoverhangMin 8 \
@@ -143,13 +142,17 @@ process RNASEQ_MAPPING_STAR {
        --outSAMtype BAM SortedByCoordinate \
        --outSAMattrRGline ID:$replicateId LB:library PL:illumina PU:machine SM:GM12878
 
+  # Select only unique alignments, no multimaps
+  (samtools view -H Aligned.sortedByCoord.out.bam; samtools view Aligned.sortedByCoord.out.bam| grep -w 'NH:i:1') \
+  |samtools view -Sb - > Aligned.sortedByCoord.uniq.bam
+  
   # Index the BAM file
-  samtools index Aligned.sortedByCoord.out.bam
+  samtools index Aligned.sortedByCoord.uniq.bam
   """
 }
 
-/**********
- *
+
+/*
  * Process 3: Split reads that contain Ns in their CIGAR string.
  *            Creates k+1 new reads (where k is the number of N cigar elements) 
  *            that correspond to the segments of the original read beside/between 
@@ -172,18 +175,15 @@ process RNASEQ_GATK_SPLITNCIGAR {
   script:
   """
   # SplitNCigarReads and reassign mapping qualities
-  $GATK -T SplitNCigarReads \
-          -R $genome -I $bam \
-          -o split.bam \
-          -rf ReassignOneMappingQuality \
-          -RMQF 255 -RMQT 60 \
-          -U ALLOW_N_CIGAR_READS \
-          --fix_misencoded_quality_scores
+  gatk SplitNCigarReads \
+            -R $genome \
+            -I $bam \
+            --refactor-cigar-string \
+            -O split.bam
   """
 }
 
-/***********
- *
+/*
  * Process 4: Base recalibrate to detect systematic errors in base quality scores, 
  *            select unique alignments and index
  *             
@@ -191,52 +191,42 @@ process RNASEQ_GATK_SPLITNCIGAR {
 
 process RNASEQ_GATK_RECALIBRATE {
   tag "$replicateId"
-  label 'mem_large'    
+  label "mem_large"
 
   input: 
-    path genome  
+    path genome
     path index
     path dict
     tuple val(replicateId), path(bam), path(index)
     tuple path(variants_file), path(variants_file_index)
 
   output:
-    tuple val(sampleId), path("${replicateId}.final.uniq.bam"), path("${replicateId}.final.uniq.bam.bai")
+    tuple \
+      val(sampleId), \
+      path("${replicateId}.final.uniq.bam"), \
+      path("${replicateId}.final.uniq.bam.bai")
   
   script: 
   sampleId = replicateId.replaceAll(/[12]$/,'')
   """
   # Indel Realignment and Base Recalibration
-  $GATK -T BaseRecalibrator \
-          --default_platform illumina \
-          -cov ReadGroupCovariate \
-          -cov QualityScoreCovariate \
-          -cov CycleCovariate \
-          -knownSites ${variants_file} \
-          -cov ContextCovariate \
-          -R ${genome} -I ${bam} \
-          --downsampling_type NONE \
-          -nct ${task.cpus} \
-          -o final.rnaseq.grp 
+  gatk BaseRecalibrator \
+          -R $genome \
+          -I $bam \
+          --known-sites $variants_file \
+          -O final.rnaseq.grp 
 
-  $GATK -T PrintReads \
-          -R ${genome} -I ${bam} \
-          -BQSR final.rnaseq.grp \
-          -nct ${task.cpus} \
-          -o final.bam
-
-  # Select only unique alignments, no multimaps
-  (samtools view -H final.bam; samtools view final.bam| grep -w 'NH:i:1') \
-  |samtools view -Sb -  > ${replicateId}.final.uniq.bam
+  gatk ApplyBQSR \
+          -R $genome -I $bam \
+          --bqsr-recal-file final.rnaseq.grp \
+          -O ${replicateId}.final.uniq.bam
 
   # Index BAM files
   samtools index ${replicateId}.final.uniq.bam
   """
 }
 
-/***********
- * PART 5: GATK Variant Calling
- *
+/*
  * Process 5: Call variants with GATK HaplotypeCaller.
  *            Calls SNPs and indels simultaneously via local de-novo assembly of 
  *            haplotypes in an active region.
@@ -245,43 +235,43 @@ process RNASEQ_GATK_RECALIBRATE {
 
 process RNASEQ_CALL_VARIANTS {
   tag "$sampleId"
-  label 'mem_large'
+  label "mem_xlarge"
 
   input:
     path genome
-    path index 
-    path dict 
-    tuple val(sampleId), path(bam), path(bai) 
-  
+    path index
+    path dict
+    tuple val(sampleId), path(bam), path(bai)
+ 
   output: 
     tuple val(sampleId), path('final.vcf')
 
   script:
+  def bam_params = bam.collect{ "-I $it" }.join(' ')
   """
   # fix absolute path in dict file
   sed -i 's@UR:file:.*${genome}@UR:file:${genome}@g' $dict
-  echo "${bam.join('\n')}" > bam.list
   
   # Variant calling
-  $GATK -T HaplotypeCaller \
-          -R $genome -I bam.list \
-          -dontUseSoftClippedBases \
-          -stand_call_conf 20.0 \
-          -o output.gatk.vcf.gz
+  gatk HaplotypeCaller \
+          --native-pair-hmm-threads ${task.cpus} \
+          --reference ${genome} \
+          --output output.gatk.vcf.gz \
+          ${bam_params} \
+          --standard-min-confidence-threshold-for-calling 20.0 \
+          --dont-use-soft-clipped-bases 
 
   # Variant filtering
-  $GATK -T VariantFiltration \
-          -R $genome -V output.gatk.vcf.gz \
-          -window 35 -cluster 3 \
-          -filterName FS -filter "FS > 30.0" \
-          -filterName QD -filter "QD < 2.0" \
-          -o final.vcf
+  gatk VariantFiltration \
+          -R ${genome} -V output.gatk.vcf.gz \
+          --cluster-window-size 35 --cluster-size 3 \
+          --filter-name FS --filter-expression \"FS > 30.0\" \
+          --filter-name QD --filter-expression \"QD < 2.0\" \
+          -O final.vcf
   """
 }
 
-/***********
- * PART 6: Post-process variants file and prepare for Allele-Specific Expression and RNA Editing Analysis
- *
+/*
  * Process 6A: Post-process the VCF result  
  */
 
@@ -293,7 +283,7 @@ process POST_PROCESS_VCF {
     tuple val(sampleId), path('final.vcf')
     tuple path('filtered.recode.vcf.gz'), path('filtered.recode.vcf.gz.tbi')
   output: 
-    tuple val(sampleId), path('final.vcf'), path('commonSNPs.diff.sites_in_files') 
+    tuple val(sampleId), path('final.vcf'), path('commonSNPs.diff.sites_in_files')
   
   script:
   '''
@@ -313,9 +303,8 @@ process PREPARE_VCF_FOR_ASE {
 
   input: 
     tuple val(sampleId), path('final.vcf'), path('commonSNPs.diff.sites_in_files')
-
   output: 
-    tuple val(sampleId), path('known_snps.vcf') 
+    tuple val(sampleId), path('known_snps.vcf.gz'), path('known_snps.vcf.gz.tbi')
     path 'AF.histogram.pdf'
 
   script:
@@ -331,6 +320,9 @@ process PREPARE_VCF_FOR_ASE {
                >AF.4R
 
   gghist.R -i AF.4R -o AF.histogram.pdf
+  # Known SNPs have to be zipped and indexed for being used
+  bgzip -c known_snps.vcf  > known_snps.vcf.gz
+  tabix -p vcf known_snps.vcf.gz
   '''
 }
 
@@ -340,49 +332,47 @@ process PREPARE_VCF_FOR_ASE {
  *             filters that are tuned for enabling allele-specific expression 
  *             (ASE) analysis
  */
- 
+
 process ASE_KNOWNSNPS {
   tag "$sampleId"
   publishDir "$params.results/$sampleId" 
-  label 'mem_large'  
+  label "mem_large"
 
   input:
-    path genome 
+    path genome
     path index
-    path dict 
-    tuple val(sampleId), path(vcf),  path(bam), path(bai)
+    path dict
+    tuple val(sampleId), path(vcf), path(tbi), path(bam), path(bai)
   
   output:
     path "ASE.tsv"
   
   script:
+  def bam_params = bam.collect{ "-I $it" }.join(' ')
   """
-  echo "${bam.join('\n')}" > bam.list
-    
-  $GATK -R ${genome} \
-          -T ASEReadCounter \
-          -o ASE.tsv \
-          -I bam.list \
-          -sites ${vcf}
+  gatk ASEReadCounter \
+          -R ${genome} \
+          -O ASE.tsv \
+          ${bam_params} \
+          -V ${vcf}
   """
 }
-
 
 /* 
  * Group data for allele-specific expression.
  * 
- * The `bam_ch` emites tuples having the following structure, holding the final BAM/BAI files:
+ * The `bam_for_ASE_ch` emites tuples having the following structure, holding the final BAM/BAI files:
  *  
  *   ( sample_id, file_bam, file_bai )
  * 
- * The `vcf_ch` channel emits tuples having the following structure, holding the VCF file:
+ * The `vcf_for_ASE` channel emits tuples having the following structure, holding the VCF file:
  *  
  *   ( sample_id, output.vcf ) 
  * 
  * The BAMs are grouped together and merged with VCFs having the same sample id. Finally 
- * it creates a channel named `grouped_vcf_bam_bai_ch` emitting the following tuples: 
+ * it returns a channel emitting the following tuples: 
  *  
- *   ( sample_id, file_vcf, List[file_bam], List[file_bai] )
+ *   ( sample_id, vcf_file, tbi_file, List[file_bam], List[file_bai] )
  */
 
 def group_per_sample(bam_ch, vcf_ch) {
@@ -394,6 +384,7 @@ def group_per_sample(bam_ch, vcf_ch) {
       def bam = left[1]
       def bai = left[2]
       def vcf = right[1]
-      tuple(sampleId, vcf, bam, bai)  
+      def tbi = right[2]
+      tuple(sampleId, vcf, tbi, bam, bai)
     }
 }
