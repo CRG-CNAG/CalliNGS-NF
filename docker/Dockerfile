@@ -41,3 +41,10 @@ RUN curl -fksSL https://github.com/alexdobin/STAR/archive/2.5.2b.tar.gz | tar xz
 ## Install R packages for ggplot2
 RUN R -e 'install.packages( c("reshape2","optparse"), repos="http://cloud.r-project.org/");' && \
     apt-get update && apt-get install r-cran-ggplot2 -y -q
+
+RUN apt-get update && apt-get install -y python \
+  && curl -fsSL https://github.com/broadinstitute/gatk/releases/download/4.1.1.0/gatk-4.1.1.0.zip > gatk-4.zip \
+  && unzip gatk-4.zip \
+  && rm gatk-4.zip
+
+ENV PATH=$PATH:/gatk-4.1.1.0
