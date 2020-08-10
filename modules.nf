@@ -34,8 +34,7 @@ process PREPARE_GENOME_PICARD {
 
   script:
   """
-  PICARD=`which picard.jar`
-  java -jar \$PICARD CreateSequenceDictionary R= $genome O= ${genome.baseName}.dict
+  gatk CreateSequenceDictionary -R $genome -O ${genome.baseName}.dict
   """
 }
 
