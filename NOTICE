@@ -1,0 +1,22 @@
+CALLINGS-NF
+
+Copyright (c) 2020, Seqera Labs.
+Copyright (c) 2017-2019, Centre for Genomic Regulation (CRG).
+
+
+This software bundles source code and libraries developed by:
+
+    Genome Research Ltd
+    Samtools
+    Licensed under The MIT/Expat license
+
+    vcftools
+    Licensed under GNU Lesser General Public License v3.0
+
+    Alexander Dobin
+    STAR
+    Licensed under The MIT license 
+
+    GATK4
+    Broad Institute, Inc
+    Licensed under a BSD 3-clause "New" or "Revised" license
