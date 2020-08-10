@@ -12,17 +12,15 @@ Install Nextflow by using the following command:
     
 Download the Docker image with this command (optional) : 
 
-    docker pull cbcrg/callings-nf@sha256:b65a7d721b9dd2da07d6bdd7f868b04039860f14fa514add975c59e68614c310
-    
-Note: the Docker image contains all the required dependencies except GATK which 
-cannot be included due to license restrictions. 
+    docker pull cbcrg/callings-nf:gatk4
 
-Download the `GenomeAnalysisTK.jar` (version 3.7) package from [this link](https://software.broadinstitute.org/gatk/download/archive).    
 
 Launch the pipeline execution with the following command: 
 
-    nextflow run CRG-CNAG/CalliNGS-NF --gatk </path/to/GenomeAnalysisTK.jar>
+    nextflow run CRG-CNAG/CalliNGS-NF -profile docker
 
+Note: the Docker image contains all the required dependencies. Add the `-profile docker` 
+  to enable the containerised execution to the example command line shown below. 
 
 ## Pipeline Description
 
@@ -107,15 +105,6 @@ Example:
     $ nextflow run CRG-CNAG/CalliNGS-NF --results /home/user/my_results
     
 
-#### `--gatk` 
-   
-* Specifies the location of the GATK jar file.
-* Download the `GenomeAnalysisTK.jar` package from [this link](https://software.broadinstitute.org/gatk/download/).
-* By default is set to CalliNGS-NF's locations: `/opt/broad/GenomeAnalysisTK.jar`.
-
-Example: 
-
-    $ nextflow run CRG-CNAG/CalliNGS-NF --gatk /opt/broad/GenomeAnalysisTK.jar
     
     
 ## Pipeline results
@@ -137,10 +126,10 @@ file | description
 
 ## Requirements 
 
-* [Nextflow](https://www.nextflow.io) 0.24.x (or higher)
-* Java 7/8
-* [Docker](https://www.docker.com/) 1.10 (or higher) or [Singularity](http://singularity.lbl.gov) engine
-* [GATK](https://software.broadinstitute.org/gatk/) 3.7 
+* [Nextflow](https://www.nextflow.io) 20.07.1 (or later)
+* Java 8 or later
+* [Docker](https://www.docker.com/) 1.10 (or later) or [Singularity](http://singularity.lbl.gov) engine
+* [GATK](https://gatk.broadinstitute.org/) 4.1.x 
 
 Note: CalliNGS-NF can be used without a container engine by installing in your system all the 
 required software components reported in the following section. See the included 
@@ -152,11 +141,10 @@ required software components reported in the following section. See the included
 CalliNGS-NF uses the following software components and tools: 
 
 * Java 8 
-* Picard 2.9.0
 * Samtools 1.3.1
 * Vcftools 0.1.14
 * STAR 2.5.2b
-* GATK 3.7
+* GATK 4.1
 * R 3.1.1 
 * Awk
 * Perl
