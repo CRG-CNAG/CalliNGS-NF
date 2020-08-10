@@ -37,7 +37,6 @@ params.variants   = "$baseDir/data/known_variants.vcf.gz"
 params.blacklist  = "$baseDir/data/blacklist.bed" 
 params.reads      = "$baseDir/data/reads/rep1_{1,2}.fq.gz"
 params.results    = "results"
-params.gatk       = '/usr/local/bin/GenomeAnalysisTK.jar'
 
 log.info """\
 C A L L I N G S  -  N F    v 2.1 
@@ -47,7 +46,6 @@ reads    : $params.reads
 variants : $params.variants
 blacklist: $params.blacklist
 results  : $params.results
-gatk     : $params.gatk
 """
 
 /* 
