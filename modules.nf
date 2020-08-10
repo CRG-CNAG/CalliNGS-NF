@@ -72,7 +72,7 @@ process PREPARE_VCF_FILE {
 
   input: 
     path variantsFile
-    path blacklisted
+    path denylisted
 
   output:
     tuple \
@@ -82,7 +82,7 @@ process PREPARE_VCF_FILE {
   script:  
   """
   vcftools --gzvcf $variantsFile -c \
-           --exclude-bed ${blacklisted} \
+           --exclude-bed ${denylisted} \
            --recode | bgzip -c \
            > ${variantsFile.baseName}.filtered.recode.vcf.gz
 

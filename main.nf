@@ -34,7 +34,7 @@ nextflow.enable.dsl = 2
  */ 
 params.genome     = "$baseDir/data/genome.fa"
 params.variants   = "$baseDir/data/known_variants.vcf.gz"
-params.blacklist  = "$baseDir/data/blacklist.bed" 
+params.denylist   = "$baseDir/data/denylist.bed" 
 params.reads      = "$baseDir/data/reads/rep1_{1,2}.fq.gz"
 params.results    = "results"
 
@@ -44,7 +44,7 @@ C A L L I N G S  -  N F    v 2.1
 genome   : $params.genome
 reads    : $params.reads
 variants : $params.variants
-blacklist: $params.blacklist
+denylist : $params.denylist
 results  : $params.results
 """
 
@@ -75,7 +75,7 @@ workflow {
       PREPARE_GENOME_SAMTOOLS(params.genome)
       PREPARE_GENOME_PICARD(params.genome)
       PREPARE_STAR_GENOME_INDEX(params.genome)
-      PREPARE_VCF_FILE(params.variants, params.blacklist)
+      PREPARE_VCF_FILE(params.variants, params.denylist)
 
       // PART 2: STAR RNA-Seq Mapping
       RNASEQ_MAPPING_STAR( 

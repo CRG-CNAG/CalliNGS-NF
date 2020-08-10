@@ -34,7 +34,7 @@ The CalliNGS-NF pipeline needs as the input following files:
 * RNAseq reads, `*.fastq`
 * Genome assembly, `*.fa`
 * Known variants, `*.vcf`
-* Blacklisted regions of the genome, `*.bed`
+* Denylisted regions of the genome, `*.bed`
 
 The RNAseq read file names should match the following naming convention:  *sampleID{1,2}_{1,2}.extension* 
 
@@ -83,15 +83,15 @@ Example:
     $ nextflow run CRG-CNAG/CalliNGS-NF --variants /home/user/data/variants.vcf
 
 
-#### `--blacklist`
+#### `--denylist` (formely `--blacklist`)
 
-* The location of the blacklisted genome regions in bed format.
+* The location of the denylisted genome regions in bed format.
 * It should end in `.bed`.
-* By default it is set to the CalliNGS-NF's location: `$baseDir/data/blacklist.bed`.
+* By default it is set to the CalliNGS-NF's location: `$baseDir/data/denylist.bed`.
 
 Example:
 
-    $ nextflow run CRG-CNAG/CalliNGS-NF --blacklist /home/user/data/blacklisted_regions.bed
+    $ nextflow run CRG-CNAG/CalliNGS-NF --denylist /home/user/data/denylisted_regions.bed
 
 
 #### `--results` 
