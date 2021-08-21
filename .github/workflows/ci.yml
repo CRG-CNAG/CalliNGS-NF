@@ -1,7 +1,6 @@
-name: test
 on: [push, pull_request]
 jobs:
-  build:
+  test:
     name: Run workflow tests
     runs-on: ubuntu-latest
     steps:
