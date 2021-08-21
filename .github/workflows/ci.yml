@@ -1,0 +1,12 @@
+on: [push, pull_request]
+jobs:
+  test:
+    name: Run workflow tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: |
+          wget -qO- get.nextflow.io | bash
+          sudo mv nextflow /usr/local/bin/
+          nextflow run ${GITHUB_WORKSPACE} -profile docker
+          bash -x validate-ci.sh
