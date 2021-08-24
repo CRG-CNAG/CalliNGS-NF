@@ -119,18 +119,9 @@ process RNASEQ_MAPPING_STAR {
        --alignSJoverhangMin 8 \
        --alignSJDBoverhangMin 1 \
        --outFilterMismatchNmax 999
-    
-  # 2nd pass (improve alignmets using table of splice junctions and create a new index)  
-  mkdir genomeDir  
-  STAR --runMode genomeGenerate \
-       --genomeDir genomeDir \
-       --genomeFastaFiles $genome \
-       --sjdbFileChrStartEnd SJ.out.tab \
-       --sjdbOverhang 75 \
-       --runThreadN $task.cpus
-    
-  # Final read alignments  
-  STAR --genomeDir genomeDir \
+
+  # Run 2-pass mapping (improve alignmets using table of splice junctions and create a new index)  
+  STAR --genomeDir $genomeDir \
        --readFilesIn $reads \
        --runThreadN $task.cpus \
        --readFilesCommand zcat \
@@ -138,6 +129,7 @@ process RNASEQ_MAPPING_STAR {
        --alignSJoverhangMin 8 \
        --alignSJDBoverhangMin 1 \
        --outFilterMismatchNmax 999 \
+       --sjdbFileChrStartEnd SJ.out.tab \
        --outSAMtype BAM SortedByCoordinate \
        --outSAMattrRGline ID:$replicateId LB:library PL:illumina PU:machine SM:GM12878
 
