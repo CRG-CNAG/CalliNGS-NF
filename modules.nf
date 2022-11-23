@@ -369,7 +369,7 @@ process ASE_KNOWNSNPS {
 def group_per_sample(bam_ch, vcf_ch) {
   bam_ch
     .groupTuple()
-    .phase(vcf_ch)
+    .join(vcf_ch)
     .map{ left, right -> 
       def sampleId = left[0]
       def bam = left[1]
