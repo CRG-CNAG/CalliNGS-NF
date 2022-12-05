@@ -310,7 +310,7 @@ process PREPARE_VCF_FOR_ASE {
                {print  $v[1]/($v[1]+$v[0])."\\n"; }' |awk '$1!=1' \
                >AF.4R
 
-  gghist.R -i AF.4R -o AF.histogram.pdf
+  # gghist.R -i AF.4R -o AF.histogram.pdf
   # Known SNPs have to be zipped and indexed for being used
   bgzip -c known_snps.vcf  > known_snps.vcf.gz
   tabix -p vcf known_snps.vcf.gz
