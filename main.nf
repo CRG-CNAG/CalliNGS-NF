@@ -105,19 +105,4 @@ workflow {
             PREPARE_GENOME_PICARD.out, 
             RNASEQ_GATK_RECALIBRATE.out.groupTuple() )
 
-      // PART 6: Post-process variants file and prepare for 
-      // Allele-Specific Expression and RNA Editing Analysis
-      POST_PROCESS_VCF( 
-            RNASEQ_CALL_VARIANTS.out, 
-            PREPARE_VCF_FILE.out )
-
-      PREPARE_VCF_FOR_ASE( POST_PROCESS_VCF.out )
-
-      ASE_KNOWNSNPS(
-            params.genome, 
-            PREPARE_GENOME_SAMTOOLS.out, 
-            PREPARE_GENOME_PICARD.out, 
-            group_per_sample(
-                  RNASEQ_GATK_RECALIBRATE.out, 
-                  PREPARE_VCF_FOR_ASE.out[0]) )
 }
