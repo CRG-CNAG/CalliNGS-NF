@@ -60,9 +60,6 @@ include {
   RNASEQ_GATK_SPLITNCIGAR; 
   RNASEQ_GATK_RECALIBRATE;
   RNASEQ_CALL_VARIANTS;
-  POST_PROCESS_VCF;
-  PREPARE_VCF_FOR_ASE;
-  ASE_KNOWNSNPS;
   group_per_sample } from './modules.nf' 
 
 /* 
